@@ -1,4 +1,23 @@
 services:
+
+  postgresql:
+    container_name: dev_postgresql
+    hostname: dev_postgresql
+    image: postgres:15-alpine
+    ports:
+      - 5432:5432
+    env_file:
+      - .env
+    volumes:
+      - dev_db_data:/var/lib/postgresql/data
+    restart: no
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 4
+    networks: 
+      - dev_network
   
   backend:
     container_name: dev_backend
@@ -14,6 +33,9 @@ services:
       - .env
     restart: no
     command: bash /backend/scripts/run-dev.sh
+    depends_on:
+      postgresql:
+        condition: service_healthy
     develop:
       watch:
         - action: sync
@@ -26,6 +48,9 @@ services:
     networks: 
       - dev_network
 
+
+volumes:
+  dev_db_data:
 
 networks:
   dev_network:
