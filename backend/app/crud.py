@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
 
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password
 from app.models import User, UserCreate
 
 
@@ -20,3 +20,10 @@ def get_user_by_name(*, session: Session, name: str) -> User | None:
     return session_user
 
 
+def authenticate(*, session: Session, name: str, password: str) -> User | None:
+    db_user = get_user_by_name(session=session, name=name)
+    if not db_user:
+        return None
+    if not verify_password(password, db_user.hashed_password):
+        return None
+    return db_user

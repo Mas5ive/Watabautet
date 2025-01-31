@@ -25,3 +25,8 @@ class UserRegister(SQLModel):
     name: str = Field(unique=True, index=True, max_length=20)
     password: str = Field(min_length=8, max_length=40)
 
+
+class Token(SQLModel):
+    access_token: str
+    token_type: str = "bearer"
+
