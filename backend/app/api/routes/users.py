@@ -1,11 +1,19 @@
 from typing import Any
 
 from app import crud
-from app.api.deps import SessionDep
+from app.api.deps import CurrentUser, SessionDep
 from app.models import UserCreate, UserPublic, UserRegister
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+@router.get("/me", response_model=UserPublic)
+def read_user_me(current_user: CurrentUser) -> Any:
+    """
+    Get current user.
+    """
+    return current_user
 
 
 @router.post("/signup", response_model=UserPublic)
