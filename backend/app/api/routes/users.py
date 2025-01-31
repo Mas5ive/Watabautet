@@ -2,7 +2,7 @@ from typing import Any
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep
-from app.models import UserCreate, UserPublic, UserRegister
+from app.models import Message, UserCreate, UserPublic, UserRegister
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -14,6 +14,16 @@ def read_user_me(current_user: CurrentUser) -> Any:
     Get current user.
     """
     return current_user
+
+
+@router.delete("/me", response_model=Message)
+def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Delete own user.
+    """
+    session.delete(current_user)
+    session.commit()
+    return Message(message="User deleted successfully")
 
 
 @router.post("/signup", response_model=UserPublic)

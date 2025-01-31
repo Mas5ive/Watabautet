@@ -26,6 +26,10 @@ class UserRegister(SQLModel):
     password: str = Field(min_length=8, max_length=40)
 
 
+class Message(SQLModel):
+    message: str
+
+
 class Token(SQLModel):
     access_token: str
     token_type: str = "bearer"
