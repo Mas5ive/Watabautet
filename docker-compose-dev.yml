@@ -49,8 +49,24 @@ services:
       - dev_network
 
 
+  redis:
+    container_name: dev_redis
+    hostname: dev_redis
+    image: redis:7.4.0-alpine
+    ports:
+      - 6379:6379
+    env_file:
+      - .env
+    volumes:
+      - dev_cache_data:/data
+    restart: no
+    entrypoint: ["redis-server"]
+    networks:
+      - dev_network
+
 volumes:
   dev_db_data:
+  dev_cache_data:
 
 networks:
   dev_network:
