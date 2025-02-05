@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 7 days = 7 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
+    REDIS_HOST: str = ""
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = ""
+    REDIS_PREFIX_VIDEO: str = 'video:'
+    REDIS_PREFIX_SUMMARY: str = 'summary:'
+
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str

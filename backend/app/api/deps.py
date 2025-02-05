@@ -2,6 +2,7 @@ from typing import Annotated, Generator
 
 import jwt
 from app.core import security
+from redis import Redis
 from app.core.config import settings
 from app.core.db import engine
 from app.models import TokenPayload, User
@@ -22,6 +23,16 @@ def get_db() -> Generator[Session, None, None]:
 
 
 SessionDep = Annotated[Session, Depends(get_db)]
+
+
+def get_cache() -> Redis:
+    from app.main import app
+    cache = app.state.redis_con
+    return cache
+
+
+CacheDep = Annotated[Redis, Depends(get_cache)]
+
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 

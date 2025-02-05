@@ -61,6 +61,7 @@ services:
       - dev_cache_data:/data
     restart: no
     entrypoint: ["redis-server"]
+    command: ["--requirepass", "$REDIS_PASSWORD"]
     networks:
       - dev_network
 
