@@ -1,7 +1,7 @@
 
 import uuid
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import CheckConstraint, Field, Relationship, SQLModel
 
 
 class UserBase(SQLModel):
@@ -24,6 +24,36 @@ class User(UserBase, table=True):
 class UserRegister(SQLModel):
     name: str = Field(unique=True, index=True, max_length=20)
     password: str = Field(min_length=8, max_length=40)
+
+
+class SummaryBase(SQLModel):
+    video_link: str
+    language: str = Field(max_length=5)
+    text: str | None = None
+    size: str = Field(regex="^(small|medium|large)$")
+
+    __table_args__ = (
+        CheckConstraint(
+            "size IN ('small', 'medium', 'large')",
+            name="valid_size_check"
+        ),
+    )
+
+
+class Summary(SummaryBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+
+    user_summaries: list['UserSummary'] = Relationship(back_populates="summary", cascade_delete=True)
+
+
+class UserSummary(SQLModel, table=True):
+    __tablename__ = 'user_summary'
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id")
+    summary_id: int = Field(foreign_key="summary.id", ondelete='CASCADE')
+
+    summary: 'Summary' = Relationship(back_populates="user_summaries")
 
 
 class Message(SQLModel):
