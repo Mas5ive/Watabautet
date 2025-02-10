@@ -26,8 +26,22 @@ class UserRegister(SQLModel):
     password: str = Field(min_length=8, max_length=40)
 
 
+class VideoBase(SQLModel):
+    title: str
+    description: str
+    category: str
+    major_language: str = Field(max_length=5)
+    text: str
+
+
+class Video(VideoBase, table=True):
+    link: str | None = Field(default=None, primary_key=True)
+
+    summaries: list["Summary"] = Relationship(back_populates="video", cascade_delete=True)
+
+
 class SummaryBase(SQLModel):
-    video_link: str
+    video_link: str = Field(foreign_key='video.link', ondelete='CASCADE')
     language: str = Field(max_length=5)
     text: str | None = None
     size: str = Field(regex="^(small|medium|large)$")
@@ -44,6 +58,7 @@ class Summary(SummaryBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     user_summaries: list['UserSummary'] = Relationship(back_populates="summary", cascade_delete=True)
+    video: 'Video' = Relationship(back_populates="summaries")
 
 
 class UserSummary(SQLModel, table=True):
