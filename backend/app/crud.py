@@ -1,7 +1,10 @@
-from sqlmodel import Session, select
+import json
 
+from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models import User, UserCreate
+from app.models import Summary, User, UserCreate
+from redis import Redis
+from sqlmodel import Session, select
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -27,3 +30,28 @@ def authenticate(*, session: Session, name: str, password: str) -> User | None:
     if not verify_password(password, db_user.hashed_password):
         return None
     return db_user
+
+
+def get_summary_from_db(*, session: Session, video_link: str, size: str, language: str) -> Summary | None:
+    summary = session.exec(
+        select(Summary).where(
+            Summary.size == size,
+            Summary.language == language,
+            Summary.video_link == video_link,
+        )
+    ).one_or_none()
+    return summary
+
+
+def get_summary_from_cache(*, cache: Redis, video_link: str, size: str, language: str) -> SummaryPublic | None:
+    summary_key = f'{settings.REDIS_PREFIX_SUMMARY} {video_link}-{size}-{language}'
+    if summary_value := cache.get(summary_key):
+        summary_decode = json.loads(summary_value.decode('utf-8'))
+        summary = SummaryPublic.model_validate(
+            summary_decode, update={
+                'video_link': video_link,
+                'size': size,
+                'language': language
+            }
+        )
+        return summary

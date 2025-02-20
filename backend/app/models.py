@@ -1,4 +1,5 @@
 
+from enum import Enum
 import uuid
 
 from sqlmodel import CheckConstraint, Field, Relationship, SQLModel
@@ -34,6 +35,13 @@ class VideoBase(SQLModel):
     text: str
 
 
+class Status(str, Enum):
+    SEARCH = 'search'
+    SUMMARIZING = 'summarizing'
+    FAIL = 'fail'
+    FINISH = 'finish'
+
+
 class Video(VideoBase, table=True):
     link: str | None = Field(default=None, primary_key=True)
 
@@ -59,6 +67,11 @@ class Summary(SummaryBase, table=True):
 
     user_summaries: list['UserSummary'] = Relationship(back_populates="summary", cascade_delete=True)
     video: 'Video' = Relationship(back_populates="summaries")
+
+
+class SummaryPublic(SummaryBase):
+    status: Status = Status.FINISH
+    details: str | None = None
 
 
 class UserSummary(SQLModel, table=True):
