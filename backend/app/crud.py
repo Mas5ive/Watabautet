@@ -2,7 +2,7 @@ import json
 
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models import Summary, User, UserCreate
+from app.models import Summary, SummaryPublic, User, UserCreate
 from redis import Redis
 from sqlmodel import Session, select
 
@@ -55,3 +55,11 @@ def get_summary_from_cache(*, cache: Redis, video_link: str, size: str, language
             }
         )
         return summary
+
+
+def create_summary(*, session: Session, summary: SummaryPublic) -> Summary:
+    new_summary = Summary.model_validate(summary)
+    session.add(new_summary)
+    session.commit()
+    session.refresh(new_summary)
+    return new_summary
