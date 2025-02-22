@@ -87,3 +87,7 @@ def link_user_with_summary(*, session=Session, user=User, summary=Summary) -> Us
     session.refresh(user_summary)
     return user_summary
 
+
+def unlink_user_with_summary(*, session=Session, user_summary=UserSummary) -> None:
+    session.delete(user_summary)
+    session.commit()
