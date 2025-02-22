@@ -65,6 +65,11 @@ def create_summary(*, session: Session, summary: SummaryPublic) -> Summary:
     return new_summary
 
 
+def delete_summary(*, session: Session, summary: Summary) -> None:
+    session.delete(summary)
+    session.commit()
+
+
 def get_user_with_summary(*, session=Session, user=User, summary=Summary) -> UserSummary | None:
     user_summary = session.exec(
         select(UserSummary).where(
