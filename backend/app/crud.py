@@ -2,7 +2,7 @@ import json
 
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models import Summary, SummaryPublic, User, UserCreate
+from app.models import Summary, SummaryPublic, User, UserCreate, UserSummary
 from redis import Redis
 from sqlmodel import Session, select
 
@@ -63,3 +63,22 @@ def create_summary(*, session: Session, summary: SummaryPublic) -> Summary:
     session.commit()
     session.refresh(new_summary)
     return new_summary
+
+
+def get_user_with_summary(*, session=Session, user=User, summary=Summary) -> UserSummary | None:
+    user_summary = session.exec(
+        select(UserSummary).where(
+            UserSummary.user_id == user.id,
+            UserSummary.summary_id == summary.id
+        )
+    ).one_or_none()
+    return user_summary
+
+
+def link_user_with_summary(*, session=Session, user=User, summary=Summary) -> UserSummary:
+    user_summary = UserSummary(user_id=user.id, summary_id=summary.id)
+    session.add(user_summary)
+    session.commit()
+    session.refresh(user_summary)
+    return user_summary
+
