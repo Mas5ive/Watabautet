@@ -20,6 +20,7 @@ class UserCreate(UserBase):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    user_summaries: list['UserSummary'] = Relationship(back_populates="user")
 
 
 class UserRegister(SQLModel):
@@ -81,6 +82,7 @@ class UserSummary(SQLModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="user.id")
     summary_id: int = Field(foreign_key="summary.id", ondelete='CASCADE')
 
+    user: 'User' = Relationship(back_populates='user_summaries')
     summary: 'Summary' = Relationship(back_populates="user_summaries")
 
 
