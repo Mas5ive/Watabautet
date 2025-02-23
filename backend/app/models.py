@@ -1,6 +1,6 @@
 
-from enum import Enum
 import uuid
+from enum import Enum
 
 from sqlmodel import CheckConstraint, Field, Relationship, SQLModel
 
@@ -29,28 +29,20 @@ class UserRegister(SQLModel):
 
 
 class VideoBase(SQLModel):
+    link: str | None = Field(default=None, primary_key=True)
     title: str
+
+
+class Video(VideoBase, table=True):
     description: str
     category: str
     major_language: str = Field(max_length=5)
     text: str
 
-
-class Status(str, Enum):
-    SEARCH = 'search'
-    SUMMARIZING = 'summarizing'
-    FAIL = 'fail'
-    FINISH = 'finish'
-
-
-class Video(VideoBase, table=True):
-    link: str | None = Field(default=None, primary_key=True)
-
     summaries: list["Summary"] = Relationship(back_populates="video", cascade_delete=True)
 
 
 class SummaryBase(SQLModel):
-    video_link: str = Field(foreign_key='video.link', ondelete='CASCADE')
     language: str = Field(max_length=5)
     text: str | None = None
     size: str = Field(regex="^(small|medium|large)$")
@@ -63,15 +55,26 @@ class SummaryBase(SQLModel):
     )
 
 
-class Summary(SummaryBase, table=True):
+class SummaryWithVideoLink(SummaryBase):
+    video_link: str = Field(foreign_key='video.link', ondelete='CASCADE')
+
+
+class Summary(SummaryWithVideoLink, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     user_summaries: list['UserSummary'] = Relationship(back_populates="summary", cascade_delete=True)
     video: 'Video' = Relationship(back_populates="summaries")
 
 
-class SummaryPublic(SummaryBase):
-    status: Status = Status.FINISH
+class SummaryStatus(str, Enum):
+    SEARCH = 'search'
+    SUMMARIZING = 'summarizing'
+    FAIL = 'fail'
+    FINISH = 'finish'
+
+
+class SummaryPublic(SummaryWithVideoLink):
+    status: SummaryStatus = SummaryStatus.FINISH
     details: str | None = None
 
 
