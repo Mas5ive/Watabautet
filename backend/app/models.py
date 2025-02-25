@@ -89,6 +89,14 @@ class UserSummary(SQLModel, table=True):
     summary: 'Summary' = Relationship(back_populates="user_summaries")
 
 
+class VideoForLibrary(VideoBase):
+    summaries: list['SummaryBase']
+
+
+class Library(SQLModel):
+    videos: list['VideoForLibrary']
+
+
 class Message(SQLModel):
     message: str
 

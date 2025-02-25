@@ -4,6 +4,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import Summary, SummaryPublic, User, UserCreate, UserSummary
 from redis import Redis
+from sqlalchemy.orm import joinedload
 from sqlmodel import Session, select
 
 
@@ -91,3 +92,13 @@ def link_user_with_summary(*, session=Session, user=User, summary=Summary) -> Us
 def unlink_user_with_summary(*, session=Session, user_summary=UserSummary) -> None:
     session.delete(user_summary)
     session.commit()
+
+
+def get_users_summaries_with_video(*, session=Session, user=User) -> list[Summary]:
+    summaries_with_video = session.exec(
+        select(Summary)
+        .join(UserSummary)
+        .where(UserSummary.user_id == user.id)
+        .options(joinedload(Summary.video))
+    ).all()
+    return summaries_with_video

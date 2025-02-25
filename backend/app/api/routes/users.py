@@ -1,9 +1,10 @@
+from collections import defaultdict
 from typing import Any
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep
-from app.models import (Message, Summary, SummaryPublic, UserCreate,
-                        UserPublic, UserRegister)
+from app.models import (Library, Message, Summary, SummaryBase, SummaryPublic,
+                        UserCreate, UserPublic, UserRegister, VideoForLibrary)
 from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -94,3 +95,23 @@ def delete_summary_for_user(current_user: CurrentUser, session: SessionDep, summ
 
     user_summary = crud.unlink_user_with_summary(session=session, user_summary=user_summary)
     return Message(message='The user deleted the summary for himself')
+
+
+@router.get('/me/library', response_model=Library)
+def get_users_library(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Gets all of the user's sammaries along with data about the videos on which they are made.
+    """
+    users_summaries = crud.get_users_summaries_with_video(session=session, user=current_user)
+
+    videos_info = defaultdict(list)
+    for summary in users_summaries:
+        key = (summary.video.link, summary.video.title)
+        summary_base = SummaryBase.model_validate(summary)
+        videos_info[key].append(summary_base)
+
+    video_library = [
+        VideoForLibrary(link=video_link, title=video_title, summaries=summaries)
+        for (video_link, video_title), summaries in videos_info.items()
+    ]
+    return video_library
