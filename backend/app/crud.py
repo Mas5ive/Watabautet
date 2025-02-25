@@ -2,7 +2,8 @@ import json
 
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models import Summary, SummaryPublic, User, UserCreate, UserSummary
+from app.models import (Summary, SummaryPublic, User, UserCreate, UserSummary,
+                        Video)
 from redis import Redis
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, select
@@ -102,3 +103,11 @@ def get_users_summaries_with_video(*, session=Session, user=User) -> list[Summar
         .options(joinedload(Summary.video))
     ).all()
     return summaries_with_video
+
+
+def get_video_from_cache(*, cache: Redis, video_link: str) -> Video | None:
+    video_key = f'{settings.REDIS_PREFIX_VIDEO} {video_link}'
+    if video_value := cache.get(video_key):
+        video = json.loads(video_value.decode('utf-8'))
+        video = Video.model_validate(video, update={'link': video_link})
+        return video
