@@ -5,8 +5,10 @@ from app.core.security import get_password_hash, verify_password
 from app.models import (Summary, SummaryPublic, User, UserCreate, UserSummary,
                         Video)
 from redis import Redis
+from sqlalchemy import event
+from sqlalchemy.engine.base import Connection
 from sqlalchemy.orm import joinedload
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, func, select
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -67,11 +69,6 @@ def create_summary(*, session: Session, summary: SummaryPublic) -> Summary:
     return new_summary
 
 
-def delete_summary(*, session: Session, summary: Summary) -> None:
-    session.delete(summary)
-    session.commit()
-
-
 def get_user_with_summary(*, session=Session, user=User, summary=Summary) -> UserSummary | None:
     user_summary = session.exec(
         select(UserSummary).where(
@@ -111,3 +108,30 @@ def get_video_from_cache(*, cache: Redis, video_link: str) -> Video | None:
         video = json.loads(video_value.decode('utf-8'))
         video = Video.model_validate(video, update={'link': video_link})
         return video
+
+
+@event.listens_for(UserSummary, "after_delete")
+def _delete_orphaned_entities_in_db(mapper, connection: Connection, target: UserSummary) -> None:
+    """
+    Cascade deletes orphaned entities in the DB using the following chain:
+    UserSummary(trigger) -> Summary -> Video
+    """
+    user_summary_count = connection.execute(
+        select(func.count()).select_from(UserSummary).
+        where(UserSummary.summary_id == target.summary_id)
+    ).scalar()
+
+    if user_summary_count:
+        return
+
+    connection.execute(delete(Summary).where(Summary.id == target.summary_id))
+
+    summary_count = connection.execute(
+        select(func.count()).select_from(Summary).
+        where(Summary.video_link == target.summary.video_link)
+    ).scalar()
+
+    if summary_count:
+        return
+
+    connection.execute(delete(Video).where(Video.link == target.summary.video_link))
