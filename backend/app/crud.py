@@ -110,6 +110,13 @@ def get_video_from_cache(*, cache: Redis, video_link: str) -> Video | None:
         return video
 
 
+def create_video(*, session, video: Video) -> Video:
+    session.add(video)
+    session.commit()
+    session.refresh(video)
+    return video
+
+
 @event.listens_for(UserSummary, "after_delete")
 def _delete_orphaned_entities_in_db(mapper, connection: Connection, target: UserSummary) -> None:
     """
