@@ -34,6 +34,8 @@ services:
     restart: no
     command: bash /backend/scripts/run-dev.sh
     depends_on:
+      redis:
+        condition: service_started
       postgresql:
         condition: service_healthy
     develop:
