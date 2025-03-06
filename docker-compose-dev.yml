@@ -36,6 +36,8 @@ services:
     depends_on:
       redis:
         condition: service_started
+      rabbit:
+        condition: service_healthy
       postgresql:
         condition: service_healthy
     develop:
@@ -67,9 +69,31 @@ services:
     networks:
       - dev_network
 
+  
+  rabbit:
+    container_name: dev_broker
+    hostname: dev_broker
+    image: rabbitmq:3-management-alpine
+    ports:
+      - 5672:5672
+      - 15672:15672
+    env_file:
+      - .env
+    volumes:
+      - dev_broker_data:/var/lib/rabbitmq
+    restart: no
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 4
+    networks:
+      - dev_network
+
 volumes:
   dev_db_data:
   dev_cache_data:
+  dev_broker_data:
 
 networks:
   dev_network:
