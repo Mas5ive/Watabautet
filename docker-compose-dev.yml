@@ -1,6 +1,6 @@
 services:
 
-  postgresql:
+  db:
     container_name: dev_postgresql
     hostname: dev_postgresql
     image: postgres:15-alpine
@@ -20,8 +20,8 @@ services:
       - dev_network
   
   backend:
-    container_name: dev_backend
-    hostname: dev_backend
+    container_name: dev_fastapi
+    hostname: dev_fastapi
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -34,11 +34,11 @@ services:
     restart: no
     command: bash /backend/scripts/run-dev.sh
     depends_on:
-      redis:
+      cache:
         condition: service_started
-      rabbit:
+      broker:
         condition: service_healthy
-      postgresql:
+      db:
         condition: service_healthy
     develop:
       watch:
@@ -53,7 +53,7 @@ services:
       - dev_network
 
 
-  redis:
+  cache:
     container_name: dev_redis
     hostname: dev_redis
     image: redis:7.4.0-alpine
@@ -70,9 +70,9 @@ services:
       - dev_network
 
   
-  rabbit:
-    container_name: dev_broker
-    hostname: dev_broker
+  broker:
+    container_name: dev_rabbitmq
+    hostname: dev_rabbitmq
     image: rabbitmq:3-management-alpine
     ports:
       - 5672:5672
