@@ -52,6 +52,36 @@ services:
     networks: 
       - dev_network
 
+  workers:
+    container_name: dev_celery
+    hostname: dev_celery
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
+      target: dev
+    ports:
+      - 5679:5679
+    env_file:
+      - .env
+    develop:
+      watch:
+        - action: sync
+          path: ./workers/app
+          target: /workers/app
+
+        - action: rebuild
+          path: ./workers/pyproject.toml
+          target: /workers/pyproject.toml
+    restart: no
+    command: bash /workers/scripts/run-dev.sh
+    depends_on:
+      cache:
+        condition: service_started
+      broker:
+        condition: service_healthy
+    networks: 
+      - dev_network
+    
 
   cache:
     container_name: dev_redis

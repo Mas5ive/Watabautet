@@ -8,10 +8,12 @@ description = """The application provides users with the ability to extract summ
  to save and organise the extracted summaries for future use."""
 readme = "README.md"
 requires-python = ">=3.13, <4.0"
-dependencies = ["backend"]
+dependencies = ["backend", "workers"]
 
 [tool.uv.sources]
 backend = { workspace = true }
+workers = { workspace = true }
+
 
 [tool.uv.workspace]
-members = ["backend"]
+members = ["backend", "workers"]

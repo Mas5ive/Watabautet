@@ -1,0 +1,14 @@
+[project]
+name = "workers"
+version = "0.1.0"
+description = ""
+authors = [{ name = "Mas5ive", email = "empty@empty" }]
+requires-python = ">=3.13, <4.0"
+dependencies = [
+    "celery<6.0.0,>=5.4.0",
+    "google-api-python-client<3.0.0,>=2.163.0",
+    "redis<6.0.0,>=5.2.1",
+]
+
+[dependency-groups]
+dev = ["debugpy<2.0.0,>=1.8.12", "pytest<9.0.0,>=8.3.4", "watchdog<7.0.0,>=6.0.0"]
