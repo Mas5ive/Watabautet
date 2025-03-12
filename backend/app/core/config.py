@@ -23,6 +23,17 @@ class Settings(BaseSettings):
     REDIS_PREFIX_VIDEO: str = 'video:'
     REDIS_PREFIX_SUMMARY: str = 'summary:'
 
+    @computed_field
+    @property
+    def REDIS_URL(self) -> MultiHostUrl:
+        return MultiHostUrl.build(
+            scheme="redis",
+            password=self.REDIS_PASSWORD,
+            host=self.REDIS_HOST,
+            port=self.REDIS_PORT,
+            path='0',
+        )
+
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str
@@ -41,6 +52,22 @@ class Settings(BaseSettings):
             host=self.POSTGRES_SERVER,
             port=self.POSTGRES_PORT,
             path=self.POSTGRES_DB,
+        )
+
+    RABBITMQ_HOST: str
+    RABBITMQ_DEFAULT_USER: str
+    RABBITMQ_DEFAULT_PASS: str
+    RABBITMQ_NODE_PORT: int = 5672
+
+    @computed_field
+    @property
+    def RABBITMQ_URL(self) -> MultiHostUrl:
+        return MultiHostUrl.build(
+            scheme="pyamqp",
+            username=self.RABBITMQ_DEFAULT_USER,
+            password=self.RABBITMQ_DEFAULT_PASS,
+            host=self.RABBITMQ_HOST,
+            port=self.RABBITMQ_NODE_PORT,
         )
 
 
