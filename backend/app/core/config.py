@@ -20,8 +20,6 @@ class Settings(BaseSettings):
     REDIS_HOST: str = ""
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = ""
-    REDIS_PREFIX_VIDEO: str = 'video:'
-    REDIS_PREFIX_SUMMARY: str = 'summary:'
 
     @computed_field
     @property

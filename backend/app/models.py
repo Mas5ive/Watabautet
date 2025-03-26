@@ -2,7 +2,10 @@
 import uuid
 from enum import Enum
 
+from celery import states
 from sqlmodel import CheckConstraint, Field, Relationship, SQLModel
+
+youtube_video_link = Field(schema_extra={'pattern': r'^[a-zA-Z0-9_-]{11}$'})
 
 
 class UserBase(SQLModel):
@@ -28,24 +31,67 @@ class UserRegister(SQLModel):
     password: str = Field(min_length=8, max_length=40)
 
 
-class VideoBase(SQLModel):
-    link: str | None = Field(default=None, primary_key=True)
+class TaskStatus(str, Enum):
+    PENDING = states.PENDING
+    FAILURE = states.FAILURE
+    SUCCESS = states.SUCCESS
+
+
+class Task(SQLModel):
+    status: TaskStatus = TaskStatus.SUCCESS
+    details: dict | None = None
+
+
+class VideoView(SQLModel):
+    link: str = youtube_video_link
     title: str
 
 
-class Video(VideoBase, table=True):
-    description: str
-    category: str
+class VideoRequest(SQLModel):
+    link: str = youtube_video_link
     major_language: str = Field(max_length=5)
-    text: str
 
+
+class VideoResponse(VideoRequest, Task):
+    category: str | None = None
+    description: str | None = None
+    text: str | None = None
+    title: str | None = None
+
+
+class Video(SQLModel, table=True):
+    category: str
+    description: str
+    link: str | None = Field(default=None, primary_key=True)
+    major_language: str
+    text: str
+    title: str
     summaries: list["Summary"] = Relationship(back_populates="video", cascade_delete=True)
 
 
 class SummaryBase(SQLModel):
     language: str = Field(max_length=5)
+    size: str = Field(schema_extra={'pattern': r'^(small|medium|large)$'})
+
+
+class SummaryView(SummaryBase):
+    text: str
+
+
+class SummaryRequest(SummaryBase):
+    video_link: str = youtube_video_link
+
+
+class SummaryResponse(SummaryRequest, Task):
     text: str | None = None
-    size: str = Field(regex="^(small|medium|large)$")
+
+
+class Summary(SummaryView, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    video_link: str = Field(foreign_key='video.link', ondelete='CASCADE')
+
+    user_summaries: list['UserSummary'] = Relationship(back_populates="summary", cascade_delete=True)
+    video: 'Video' = Relationship(back_populates="summaries")
 
     __table_args__ = (
         CheckConstraint(
@@ -53,29 +99,6 @@ class SummaryBase(SQLModel):
             name="valid_size_check"
         ),
     )
-
-
-class SummaryWithVideoLink(SummaryBase):
-    video_link: str = Field(foreign_key='video.link', ondelete='CASCADE')
-
-
-class Summary(SummaryWithVideoLink, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-
-    user_summaries: list['UserSummary'] = Relationship(back_populates="summary", cascade_delete=True)
-    video: 'Video' = Relationship(back_populates="summaries")
-
-
-class SummaryStatus(str, Enum):
-    SEARCH = 'search'
-    SUMMARIZING = 'summarizing'
-    FAIL = 'fail'
-    FINISH = 'finish'
-
-
-class SummaryPublic(SummaryWithVideoLink):
-    status: SummaryStatus = SummaryStatus.FINISH
-    details: str | None = None
 
 
 class UserSummary(SQLModel, table=True):
@@ -89,8 +112,8 @@ class UserSummary(SQLModel, table=True):
     summary: 'Summary' = Relationship(back_populates="user_summaries")
 
 
-class VideoForLibrary(VideoBase):
-    summaries: list['SummaryBase']
+class VideoForLibrary(VideoView):
+    summaries: list['SummaryView']
 
 
 class Library(SQLModel):

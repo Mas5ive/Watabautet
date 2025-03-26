@@ -3,7 +3,7 @@ from typing import Any
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep
-from app.models import (Library, Message, Summary, SummaryBase, SummaryPublic,
+from app.models import (Library, Message, Summary, SummaryRequest, SummaryView,
                         UserCreate, UserPublic, UserRegister, VideoForLibrary)
 from fastapi import APIRouter, HTTPException, status
 
@@ -45,15 +45,15 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
 
 
 @router.post("/me/summaries", status_code=status.HTTP_201_CREATED, response_model=Message)
-def save_summary_for_user(current_user: CurrentUser, session: SessionDep, summary: SummaryPublic) -> Any:
+def save_summary_for_user(current_user: CurrentUser, session: SessionDep, request: SummaryRequest) -> Any:
     """
     Creates a link between the user and the summary
     """
-    summary_in_db = crud.get_summary_from_db(
+    summary_in_db = crud.get_summary(
         session=session,
-        video_link=summary.video_link,
-        size=summary.size,
-        language=summary.language
+        video_link=request.video_link,
+        size=request.size,
+        language=request.language
     )
 
     if not summary_in_db:
@@ -70,15 +70,15 @@ def save_summary_for_user(current_user: CurrentUser, session: SessionDep, summar
 
 
 @router.delete("/me/summaries", response_model=Message)
-def delete_summary_for_user(current_user: CurrentUser, session: SessionDep, summary: SummaryPublic) -> Any:
+def delete_summary_for_user(current_user: CurrentUser, session: SessionDep, request: SummaryRequest) -> Any:
     """
     Deletes a link between the user and the summary
     """
-    summary_in_db = crud.get_summary_from_db(
+    summary_in_db = crud.get_summary(
         session=session,
-        video_link=summary.video_link,
-        size=summary.size,
-        language=summary.language
+        video_link=request.video_link,
+        size=request.size,
+        language=request.language
     )
 
     if not summary_in_db:
@@ -107,11 +107,11 @@ def get_users_library(session: SessionDep, current_user: CurrentUser) -> Any:
     videos_info = defaultdict(list)
     for summary in users_summaries:
         key = (summary.video.link, summary.video.title)
-        summary_base = SummaryBase.model_validate(summary)
-        videos_info[key].append(summary_base)
+        summary_view = SummaryView.model_validate(summary)
+        videos_info[key].append(summary_view)
 
     video_library = [
         VideoForLibrary(link=video_link, title=video_title, summaries=summaries)
         for (video_link, video_title), summaries in videos_info.items()
     ]
-    return video_library
+    return Library(videos=video_library)

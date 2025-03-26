@@ -1,10 +1,6 @@
-import json
-
-from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models import (Summary, SummaryPublic, User, UserCreate, UserSummary,
-                        Video)
-from redis import Redis
+from app.models import (Summary, SummaryResponse, User, UserCreate,
+                        UserSummary, Video)
 from sqlalchemy import event
 from sqlalchemy.engine.base import Connection
 from sqlalchemy.orm import joinedload
@@ -36,7 +32,7 @@ def authenticate(*, session: Session, name: str, password: str) -> User | None:
     return db_user
 
 
-def get_summary_from_db(*, session: Session, video_link: str, size: str, language: str) -> Summary | None:
+def get_summary(*, session: Session, video_link: str, size: str, language: str) -> Summary | None:
     summary = session.exec(
         select(Summary).where(
             Summary.size == size,
@@ -47,21 +43,7 @@ def get_summary_from_db(*, session: Session, video_link: str, size: str, languag
     return summary
 
 
-def get_summary_from_cache(*, cache: Redis, video_link: str, size: str, language: str) -> SummaryPublic | None:
-    summary_key = f'{settings.REDIS_PREFIX_SUMMARY} {video_link}-{size}-{language}'
-    if summary_value := cache.get(summary_key):
-        summary_decode = json.loads(summary_value.decode('utf-8'))
-        summary = SummaryPublic.model_validate(
-            summary_decode, update={
-                'video_link': video_link,
-                'size': size,
-                'language': language
-            }
-        )
-        return summary
-
-
-def create_summary(*, session: Session, summary: SummaryPublic) -> Summary:
+def create_summary(*, session: Session, summary: SummaryResponse) -> Summary:
     new_summary = Summary.model_validate(summary)
     session.add(new_summary)
     session.commit()
@@ -100,14 +82,6 @@ def get_users_summaries_with_video(*, session=Session, user=User) -> list[Summar
         .options(joinedload(Summary.video))
     ).all()
     return summaries_with_video
-
-
-def get_video_from_cache(*, cache: Redis, video_link: str) -> Video | None:
-    video_key = f'{settings.REDIS_PREFIX_VIDEO} {video_link}'
-    if video_value := cache.get(video_key):
-        video = json.loads(video_value.decode('utf-8'))
-        video = Video.model_validate(video, update={'link': video_link})
-        return video
 
 
 def create_video(*, session, video: Video) -> Video:
