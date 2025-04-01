@@ -100,5 +100,5 @@ def save_summary(
             content={'message': 'The summary must be complete!'}
         )
 
-    summary_in_db = crud.create_summary(session=session, summary=Summary.model_validate(summary_in_cache))
+    summary_in_db = crud.create_obj(session=session, obj=Summary.model_validate(summary_in_cache))
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={'message': 'The summary successfully saved'})

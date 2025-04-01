@@ -80,5 +80,5 @@ def save_video(
             content={'message': 'The video must be complete!'}
         )
 
-    video_in_db = crud.create_video(session=session, video=Video.model_validate(video_in_cache))
+    video_in_db = crud.create_obj(session=session, obj=Video.model_validate(video_in_cache))
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={'message': 'The video successfully saved'})

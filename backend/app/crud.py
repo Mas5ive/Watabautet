@@ -3,14 +3,14 @@ from app.models import Summary, User, UserSummary, Video
 from sqlalchemy import event
 from sqlalchemy.engine.base import Connection
 from sqlalchemy.orm import joinedload
-from sqlmodel import Session, delete, func, select
+from sqlmodel import Session, SQLModel, delete, func, select
 
 
-def create_user(*, session: Session, user: User) -> User:
-    session.add(user)
+def create_obj(*, session: Session, obj: SQLModel) -> SQLModel:
+    session.add(obj)
     session.commit()
-    session.refresh(user)
-    return user
+    session.refresh(obj)
+    return obj
 
 
 def get_user_by_name(*, session: Session, name: str) -> User | None:
@@ -36,13 +36,6 @@ def get_summary(*, session: Session, video_link: str, size: str, language: str) 
             Summary.video_link == video_link,
         )
     ).one_or_none()
-    return summary
-
-
-def create_summary(*, session: Session, summary: Summary) -> Summary:
-    session.add(summary)
-    session.commit()
-    session.refresh(summary)
     return summary
 
 
@@ -77,13 +70,6 @@ def get_users_summaries_with_video(*, session=Session, user=User) -> list[Summar
         .options(joinedload(Summary.video))
     ).all()
     return summaries_with_video
-
-
-def create_video(*, session, video: Video) -> Video:
-    session.add(video)
-    session.commit()
-    session.refresh(video)
-    return video
 
 
 @event.listens_for(UserSummary, "after_delete")

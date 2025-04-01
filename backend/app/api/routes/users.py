@@ -41,9 +41,9 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
             detail="The user with this name already exists in the system",
         )
 
-    user = crud.create_user(
+    user = crud.create_obj(
         session=session,
-        user=User.model_validate(
+        obj=User.model_validate(
             user_in, update={"hashed_password": get_password_hash(user_in.password)}
         ))
     return user
