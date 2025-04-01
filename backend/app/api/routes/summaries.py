@@ -3,7 +3,8 @@ from typing import Annotated, Any
 from app import crud
 from app.api import utils
 from app.api.deps import CacheDep, CurrentUser, SessionDep
-from app.models import Message, SummaryRequest, SummaryResponse, TaskStatus
+from app.models import (Message, Summary, SummaryRequest, SummaryResponse,
+                        TaskStatus)
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
@@ -99,5 +100,5 @@ def save_summary(
             content={'message': 'The summary must be complete!'}
         )
 
-    summary_in_db = crud.create_summary(session=session, summary=summary_in_cache)
+    summary_in_db = crud.create_summary(session=session, summary=Summary.model_validate(summary_in_cache))
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={'message': 'The summary successfully saved'})

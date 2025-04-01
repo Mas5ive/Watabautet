@@ -3,8 +3,9 @@ from typing import Any
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep
+from app.core.security import get_password_hash
 from app.models import (Library, Message, Summary, SummaryRequest, SummaryView,
-                        UserCreate, UserPublic, UserRegister, VideoForLibrary)
+                        User, UserPublic, UserRegister, VideoForLibrary)
 from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -39,8 +40,12 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
             status_code=400,
             detail="The user with this name already exists in the system",
         )
-    user_create = UserCreate.model_validate(user_in)
-    user = crud.create_user(session=session, user_create=user_create)
+
+    user = crud.create_user(
+        session=session,
+        user=User.model_validate(
+            user_in, update={"hashed_password": get_password_hash(user_in.password)}
+        ))
     return user
 
 

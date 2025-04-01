@@ -1,20 +1,16 @@
-from app.core.security import get_password_hash, verify_password
-from app.models import (Summary, SummaryResponse, User, UserCreate,
-                        UserSummary, Video)
+from app.core.security import verify_password
+from app.models import Summary, User, UserSummary, Video
 from sqlalchemy import event
 from sqlalchemy.engine.base import Connection
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, delete, func, select
 
 
-def create_user(*, session: Session, user_create: UserCreate) -> User:
-    db_obj = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(user_create.password)}
-    )
-    session.add(db_obj)
+def create_user(*, session: Session, user: User) -> User:
+    session.add(user)
     session.commit()
-    session.refresh(db_obj)
-    return db_obj
+    session.refresh(user)
+    return user
 
 
 def get_user_by_name(*, session: Session, name: str) -> User | None:
@@ -43,12 +39,11 @@ def get_summary(*, session: Session, video_link: str, size: str, language: str) 
     return summary
 
 
-def create_summary(*, session: Session, summary: SummaryResponse) -> Summary:
-    new_summary = Summary.model_validate(summary)
-    session.add(new_summary)
+def create_summary(*, session: Session, summary: Summary) -> Summary:
+    session.add(summary)
     session.commit()
-    session.refresh(new_summary)
-    return new_summary
+    session.refresh(summary)
+    return summary
 
 
 def get_user_with_summary(*, session=Session, user=User, summary=Summary) -> UserSummary | None:
