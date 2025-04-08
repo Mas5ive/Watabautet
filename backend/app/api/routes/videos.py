@@ -3,7 +3,10 @@ from typing import Annotated, Any
 from app import crud
 from app.api import utils
 from app.api.deps import CacheDep, CurrentUser, SessionDep
+from app.core.celery_client import celery_app
+from app.core.config import settings
 from app.models import Message, TaskStatus, Video, VideoRequest, VideoResponse
+from app.utils import calc_diff_curr_time
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
@@ -37,6 +40,61 @@ def get_video(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     return video
+
+
+@router.post('/process', status_code=202, responses={
+    202: {'model': Message},
+    400: {'model': Message},
+    503: {'model': Message}
+})
+def create_task_video(
+    current_user: CurrentUser,
+    session: SessionDep,
+    cache: CacheDep,
+    request: VideoRequest
+) -> JSONResponse:
+    """
+    Creates a background task to process video data if no existing task is currently in progress or recently failed
+    """
+    task_id_video = utils.TaskIdVideo.generate(link=request.link, major_language=request.major_language)
+    task_result = utils.get_task_result(cache=cache, task_id=task_id_video)
+
+    if task_result:
+        video_in_cache = utils.create_response_model(
+            essential_fields=request.model_dump(),
+            task_result=task_result,
+            response_model=VideoResponse
+        )
+
+        if video_in_cache.status == TaskStatus.PENDING:
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={'message': 'The task already exists'})
+        elif video_in_cache.status == TaskStatus.SUCCESS:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={'message': 'The video is already in the cache'}
+            )
+        else:
+            diff_curr_time = calc_diff_curr_time(video_in_cache.details['date_done'])
+            sec_to_task_completion = settings.FAILURE_COOLDOWN_SEC - diff_curr_time
+
+            if sec_to_task_completion > 0:
+                return JSONResponse(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    headers={'Retry-After': f'{sec_to_task_completion}'},
+                    content={'message': 'Some service is not working properly or is busy. Try the request again later'}
+                )
+    else:
+        video_in_db = session.get(Video, request.link)
+
+        if video_in_db:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={'message': 'The video is already in the DB'}
+            )
+
+    celery_app.send_task('app.tasks.get_video_data', args=[request.model_dump()], task_id=task_id_video)
+    celery_app.backend.store_result(task_id=task_id_video, result=None, state=TaskStatus.PENDING)
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={'message': 'The task has been created!'})
 
 
 @router.post('/store', responses={
