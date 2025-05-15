@@ -1,6 +1,5 @@
 .venv
 *.env
-.vscode
 
 # Python-generated files
 __pycache__/
