@@ -24,5 +24,3 @@ FROM base AS dev
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--reload"]
