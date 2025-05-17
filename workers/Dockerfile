@@ -24,8 +24,3 @@ FROM base AS dev
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
-
-CMD ["watchmedo", "auto-restart", \
-    "--directory=.", "--pattern=*.py", "--recursive", "--", \
-    "python3", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "0.0.0.0:5679", \
-    "-m", "celery", "-A", "app", "worker", "-l", "INFO", "--uid=nobody", "--gid=nogroup"]
