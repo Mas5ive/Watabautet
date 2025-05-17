@@ -1,0 +1,60 @@
+services:
+
+  db:
+    ports:
+      - 5432:5432
+    restart: no
+
+  
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: dev
+    ports:
+      - 8000:8000
+      - 5678:5678
+    restart: no
+    command: bash /backend/scripts/run-dev.sh
+    develop:
+      watch:
+        - action: sync
+          path: ./backend/app
+          target: /backend/app
+
+        - action: rebuild
+          path: ./backend/pyproject.toml
+          target: /backend/pyproject.toml
+
+  workers:
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
+      target: dev
+    ports:
+      - 5679:5679
+    restart: no
+    command: bash /workers/scripts/run-dev.sh
+    develop:
+      watch:
+        - action: sync
+          path: ./workers/app
+          target: /workers/app
+
+        - action: rebuild
+          path: ./workers/pyproject.toml
+          target: /workers/pyproject.toml
+    
+
+  cache:
+    ports:
+      - 6379:6379
+    restart: no
+
+  
+  broker:
+    ports:
+      - 5672:5672
+      - 15672:15672
+    restart: no
+
