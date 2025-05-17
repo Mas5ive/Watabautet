@@ -1,0 +1,99 @@
+services:
+
+  db:
+    container_name: postgresql
+    hostname: postgresql
+    image: postgres:15-alpine
+    env_file:
+      - .env
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 4
+    networks: 
+      - default
+  
+  backend:
+    container_name: fastapi
+    hostname: fastapi
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: base
+    env_file:
+      - .env
+    restart: always
+    command: bash /backend/scripts/run.sh
+    depends_on:
+      cache:
+        condition: service_started
+      broker:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    networks: 
+      - default
+
+  workers:
+    container_name: celery
+    hostname: celery
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
+      target: base
+    env_file:
+      - .env
+    restart: always
+    command: bash /workers/scripts/run.sh
+    depends_on:
+      cache:
+        condition: service_started
+      broker:
+        condition: service_healthy
+    networks: 
+      - default
+    
+
+  cache:
+    container_name: redis
+    hostname: redis
+    image: redis:7.4.0-alpine
+    env_file:
+      - .env
+    volumes:
+      - cache_data:/data
+    restart: always
+    entrypoint: ["redis-server"]
+    command: ["--requirepass", "$REDIS_PASSWORD"]
+    networks:
+      - default
+
+  
+  broker:
+    container_name: rabbitmq
+    hostname: rabbitmq
+    image: rabbitmq:3-management-alpine
+    env_file:
+      - .env
+    volumes:
+      - broker_data:/var/lib/rabbitmq
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 4
+    networks:
+      - default
+
+volumes:
+  db_data:
+  cache_data:
+  broker_data:
+
+networks:
+  default:
