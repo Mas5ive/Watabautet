@@ -78,6 +78,8 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "debugpy" },
+]
+test = [
     { name = "pytest" },
 ]
 
@@ -98,10 +100,8 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "debugpy", specifier = ">=1.8.12,<2.0.0" },
-    { name = "pytest", specifier = ">=8.3.4,<9.0.0" },
-]
+dev = [{ name = "debugpy", specifier = ">=1.8.12,<2.0.0" }]
+test = [{ name = "pytest", specifier = ">=8.3.4,<9.0.0" }]
 
 [[package]]
 name = "bcrypt"

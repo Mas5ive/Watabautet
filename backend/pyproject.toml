@@ -20,4 +20,5 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["debugpy<2.0.0,>=1.8.12", "pytest<9.0.0,>=8.3.4"]
+dev = ["debugpy<2.0.0,>=1.8.12"]
+test = ["pytest>=8.3.4,<9.0.0"]
