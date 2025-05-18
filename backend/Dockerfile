@@ -4,7 +4,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /backend
 
-COPY --from=ghcr.io/astral-sh/uv:0.5.2 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.7.5 /uv /uvx /bin/
 
 ENV UV_LINK_MODE=copy
 ENV PATH="/backend/.venv/bin:$PATH"
