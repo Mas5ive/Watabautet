@@ -1,0 +1,85 @@
+services:
+
+  db:
+    container_name: test-postgresql
+    hostname: postgresql
+    image: postgres:15-alpine
+    ports:
+      - 5433:5432
+    env_file:
+      - ../.env
+    restart: no
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 4
+    networks: 
+      - test
+
+  backend:
+    container_name: test-fastapi
+    hostname: fastapi
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+      target: dev-test
+    ports:
+      - 5680:5680
+    env_file:
+      - ../.env
+    environment:
+      - DEBUG=false # or true
+    restart: no
+    command: |
+      sh -c "
+        trap 'echo Backend received signal, exiting gracefully...; exit 0' TERM INT;
+        echo \"Backend running, PID $$ - waiting for signal\";
+        while true; do
+          sleep 1;
+        done
+      "
+    depends_on:
+      cache:
+        condition: service_started
+      broker:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    networks: 
+      - test
+  
+  cache:
+    container_name: test-redis
+    hostname: redis
+    image: redis:7.4.0-alpine
+    ports:
+      - 6380:6379
+    env_file:
+      - ../.env
+    restart: no
+    command: ["--requirepass", "${REDIS_PASSWORD}"]
+    networks:
+      - test
+
+  broker:
+    container_name: test-rabbitmq
+    hostname: rabbitmq
+    image: rabbitmq:3-management-alpine
+    ports:
+      - 5673:5672
+      - 15673:15672
+    env_file:
+      - ../.env
+    restart: no
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 4
+    networks:
+      - test
+
+
+networks:
+  test:

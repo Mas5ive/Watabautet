@@ -31,3 +31,10 @@ FROM base AS test
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --group test
+
+
+
+FROM base AS dev-test
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --all-groups
