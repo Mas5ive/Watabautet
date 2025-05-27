@@ -1,12 +1,12 @@
 from collections import defaultdict
-from typing import Any
+from typing import Annotated, Any
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep
 from app.core.security import get_password_hash
 from app.models import (Library, Message, SummaryRequest, SummaryView, User,
                         UserPublic, UserRegister, VideoForLibrary)
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -74,7 +74,11 @@ def save_summary_for_user(current_user: CurrentUser, session: SessionDep, reques
 
 
 @router.delete("/me/summaries", response_model=Message)
-def delete_summary_for_user(current_user: CurrentUser, session: SessionDep, request: SummaryRequest) -> Any:
+def delete_summary_for_user(
+    current_user: CurrentUser,
+    session: SessionDep,
+    request: Annotated[SummaryRequest, Query()]
+) -> Any:
     """
     Deletes a link between the user and the summary
     """
