@@ -2,6 +2,7 @@ import json
 import uuid
 from typing import Type, TypeVar
 
+from app.core.config import settings
 from app.models import SummaryResponse, TaskStatus, VideoResponse
 from redis import Redis
 
@@ -85,7 +86,7 @@ class TaskIdVideo(_TaskId):
 
 
 def get_task_result(*, cache: Redis, task_id: str) -> dict | None:
-    if value := cache.get('celery-task-meta-' + task_id):
+    if value := cache.get(settings.CACHE_KEY_PREFIX + task_id):
         task_result = json.loads(value.decode('utf-8'))
         return task_result
 

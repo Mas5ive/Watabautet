@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 7 days = 7 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
+    CACHE_KEY_PREFIX: str = 'celery-task-meta-'
+
     REDIS_HOST: str = ""
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = ""
