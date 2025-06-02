@@ -196,5 +196,13 @@ def save_summary(
             content={'message': 'The summary must be complete!'}
         )
 
+    video_in_db = session.get(Video, request.video_link)
+
+    if not video_in_db:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={'message': 'The parent video for this summary was not found in the database.'}
+        )
+
     summary_in_db = crud.create_obj(session=session, obj=Summary.model_validate(summary_in_cache))
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={'message': 'The summary successfully saved'})
