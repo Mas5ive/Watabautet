@@ -156,3 +156,59 @@ class TestSaveSummaryForUser:
         assert request.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+class TestDeleteSummaryForUser:
+
+    API_ENDPOINT = f'{API_BASE_URL}/me/summaries'
+
+    @pytest.fixture
+    def db_summary(self, db: Session, userdata: dict[str, str]):
+        t_utils.create_video_in_db(session=db)
+        summary = t_utils.create_summary_in_db(session=db)
+        user = crud.get_user_by_name(session=db, name=userdata['name'])
+        crud.link_user_with_summary(session=db, user=user, summary=summary)
+        db.refresh(summary)
+        yield summary.model_dump(exclude={'text'})
+        db.exec(delete(UserSummary))
+        db.exec(delete(Summary))
+        db.exec(delete(Video))
+        db.commit()
+
+    def test_delete_for_authenticated_user(
+            self, db: Session, client: TestClient, user_token_headers: dict[str, str], db_summary: dict[str, str]
+    ) -> None:
+        request = client.delete(self.API_ENDPOINT, headers=user_token_headers, params=db_summary)
+        assert request.status_code == status.HTTP_200_OK
+        response = request.json()
+        assert response['message'] == 'The user deleted the summary for himself'
+        #  cascade deletion is set up, so both the video and the summary will be deleted.
+        #  read more about this... from app import crud._delete_orphaned_entities_in_db
+        assert db.exec(select(UserSummary)).first() is None
+        assert db.exec(select(Summary)).first() is None
+        assert db.exec(select(Video)).first() is None
+
+    def test_delete_non_existing_summary(self, client: TestClient, user_token_headers: dict[str, str]) -> None:
+        non_existing_summary_data = {
+            'language': 'ru',
+            'size': 'small',
+            'video_link': 'w' * 11,
+        }
+        request = client.delete(self.API_ENDPOINT, headers=user_token_headers, params=non_existing_summary_data)
+        assert request.status_code == status.HTTP_404_NOT_FOUND
+        response = request.json()
+        assert response['detail'] == 'The summary not found'
+
+    def test_delete_non_linked_summary(
+        self, db: Session, client: TestClient, user_token_headers: dict[str, str], db_summary: dict[str, str]
+    ) -> None:
+        db.exec(delete(UserSummary))
+        db.commit()
+        request = client.delete(self.API_ENDPOINT, headers=user_token_headers, params=db_summary)
+        assert request.status_code == status.HTTP_400_BAD_REQUEST
+        response = request.json()
+        assert response['detail'] == 'The user is not associated with the summary'
+
+    def test_delete_for_unauthenticated_user(self, client: TestClient, db_summary:  dict[str, str]) -> None:
+        request = client.delete(self.API_ENDPOINT, params=db_summary)
+        assert request.status_code == status.HTTP_401_UNAUTHORIZED
+
+
