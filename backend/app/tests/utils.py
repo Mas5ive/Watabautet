@@ -1,8 +1,10 @@
 import json
+from datetime import datetime, timedelta, timezone
+
 from app import crud
 from app.core.config import settings
-from app.models import Summary, Video
-from app.models import TaskStatus
+from app.models import Summary, TaskStatus, Video
+from kombu import Connection
 from redis import Redis
 from sqlmodel import Session
 
@@ -122,3 +124,42 @@ def create_item_in_cache(
     cache.set(cache_key, json.dumps(data))
 
 
+def get_data_from_message(task_queue: Connection.SimpleQueue) -> list[dict[str, str]] | None:
+    """
+    Retrieves data from the RabbitMQ message broker queue without blocking.
+    A message will be deleted when received!
+
+    Args:
+        task_queue (Connection.SimpleQueue): The SimpleQueue instance connected to RabbitMQ.
+
+    Returns:
+        The payload data from the message if available, otherwise None.
+    """
+    try:
+        message = task_queue.get(block=False)
+        data = message.payload[0]
+        message.ack()
+    except task_queue.Empty:
+        data = None
+    return data
+
+
+def get_formatted_time_offset(offset: int = 0, date_format: str = '%Y-%m-%dT%H:%M:%S.%f%z') -> str:
+    """
+    Calculates a time by adding an offset in seconds to the current UTC time,
+    and returns it as a formatted string.
+
+    Args:
+        seconds_offset (int): The number of seconds to add to the current UTC time.
+                        A positive value yields a future time, a negative value
+                        yields a past time.
+        date_format (str): The strftime format string for the output.
+                     Defaults to '%Y-%m-%dT%H:%M:%S.%f%z'.
+
+    Returns:
+        str: A string representing the calculated UTC time, formatted according
+        to date_format.
+    """
+    current_time_utc = datetime.now(timezone.utc)
+    offset_time_utc = current_time_utc + timedelta(seconds=offset)
+    return offset_time_utc.strftime(date_format)
