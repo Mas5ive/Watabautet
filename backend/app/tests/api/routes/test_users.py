@@ -1,5 +1,8 @@
 import pytest
+from app import crud
 from app.core.config import settings
+from app.core.security import get_password_hash
+from app.models import User, UserRegister
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session, delete, select
@@ -50,5 +53,42 @@ class TestRegisterUser:
         assert request.status_code == status.HTTP_400_BAD_REQUEST
         response = request.json()
         assert response['detail'] == 'The user with this name already exists in the system'
+
+
+class TestDeleteUserMe:
+
+    API_ENDPOINT = f'{API_BASE_URL}/me'
+
+    @pytest.fixture()
+    def new_user_data(self, client: TestClient, db: Session):
+        username = 'testuser'
+        password = 'password'
+        user_in = UserRegister(name=username, password=password)
+        user = User.model_validate(user_in, update={'hashed_password': get_password_hash(user_in.password)})
+        user = crud.create_obj(session=db, obj=user)
+        request = client.post(
+            f'{settings.API_V1_STR}/login/access-token',
+            data={'username': username, 'password': password}
+        )
+        response = request.json()
+        auth_token = response['access_token']
+        user_token_headers = {'Authorization': f'Bearer {auth_token}'}
+
+        yield {'username': username, 'headers': user_token_headers}
+
+        db.exec(delete(User).where(User.name == username))
+        db.commit()
+
+    def test_delete_authenticated_user(self, client: TestClient, db: Session, new_user_data: dict[str, str]) -> None:
+        request = client.delete(self.API_ENDPOINT, headers=new_user_data['headers'])
+        assert request.status_code == status.HTTP_200_OK
+        response = request.json()
+        assert response['message'] == 'User deleted successfully'
+        result = db.exec(select(User).where(User.name == new_user_data['username'])).first()
+        assert result is None
+
+    def test_delete_unauthenticated_user(self, client: TestClient) -> None:
+        request = client.delete(self.API_ENDPOINT)
+        assert request.status_code == status.HTTP_401_UNAUTHORIZED
 
 
