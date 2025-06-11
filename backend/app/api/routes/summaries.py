@@ -117,28 +117,30 @@ def create_task_summary(
     task_result_video = utils.get_task_result(cache=cache, task_id=task_id_video)
 
     if task_result_video:
-        video = utils.create_response_model(
+        cache_video = utils.create_response_model(
             essential_fields=video_request.model_dump(),
             task_result=task_result_video,
             response_model=VideoResponse
         )
-        if video.status != TaskStatus.SUCCESS:
+        if cache_video.status != TaskStatus.SUCCESS:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={'message': 'There is no data on this video yet'}
             )
+        video = Video.model_validate(cache_video)
     else:
-        video = session.get(Video, video_request.link)
+        db_video = session.get(Video, video_request.link)
 
-        if not video:
+        if not db_video:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={'message': 'There is no video data for this summary'}
             )
+        video = db_video
 
     celery_app.send_task(
         'app.tasks.make_summary',
-        args=[summary_request.language, summary_request.size, video.model_dump()],
+        args=[summary_request.model_dump(exclude={'video_link'}), video.model_dump()],
         task_id=task_id_summary
     )
     celery_app.backend.store_result(task_id=task_id_summary, result=None, state=TaskStatus.PENDING)
