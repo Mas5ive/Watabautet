@@ -1,8 +1,9 @@
+import app.tests.utils as t_utils
 import pytest
 from app import crud
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.models import User, UserRegister
+from app.models import Summary, User, UserRegister, UserSummary, Video
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session, delete, select
@@ -89,6 +90,69 @@ class TestDeleteUserMe:
 
     def test_delete_unauthenticated_user(self, client: TestClient) -> None:
         request = client.delete(self.API_ENDPOINT)
+        assert request.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+class TestSaveSummaryForUser:
+
+    API_ENDPOINT = f'{API_BASE_URL}/me/summaries'
+
+    @pytest.fixture(scope='class', autouse=True)
+    def db_summary(self, db: Session):
+        t_utils.create_video_in_db(session=db)
+        summary = t_utils.create_summary_in_db(session=db)
+        yield summary.model_dump(exclude={'text'})
+        db.exec(delete(Summary))
+        db.exec(delete(Video))
+        db.commit()
+
+    @pytest.fixture(autouse=True)
+    def cleanup_user_summary(self, db: Session):
+        yield
+        db.exec(delete(UserSummary))
+        db.commit()
+
+    def test_save_for_authenticated_user(
+        self, db: Session, client: TestClient, userdata: dict[str, str], user_token_headers: dict[str, str],
+        db_summary: dict[str, str]
+    ) -> None:
+        request = client.post(self.API_ENDPOINT, headers=user_token_headers, json=db_summary)
+        assert request.status_code == status.HTTP_201_CREATED
+        response = request.json()
+        assert response['message'] == 'The summary successfully linked to the user'
+
+        user = db.exec(select(User).where(User.name == userdata['name'])).first()
+        assert user is not None
+        summary_in_db = db.exec(
+            select(Summary).where(Summary.video_link == db_summary['video_link'])
+        ).first()
+        assert summary_in_db is not None
+        user_summary = crud.get_user_with_summary(session=db, user=user, summary=summary_in_db)
+        assert user_summary is not None
+
+    def test_save_non_existing_summary(self, client: TestClient, user_token_headers: dict[str, str]) -> None:
+        non_existing_summary_data = {
+            'language': 'ru',
+            'size': 'small',
+            'video_link': 'w' * 11,
+            'text': 'summary text'
+        }
+        request = client.post(self.API_ENDPOINT, headers=user_token_headers, json=non_existing_summary_data)
+        assert request.status_code == status.HTTP_404_NOT_FOUND
+        response = request.json()
+        assert response['detail'] == 'The summary not found'
+
+    def test_save_summary_for_user_when_already_linked(
+            self, client: TestClient, user_token_headers: dict[str, str], db_summary: dict[str, str]
+    ) -> None:
+        for _ in range(2):
+            request = client.post(self.API_ENDPOINT, headers=user_token_headers, json=db_summary)
+        assert request.status_code == status.HTTP_400_BAD_REQUEST
+        response = request.json()
+        assert response['detail'] == 'The summary already linked to the user'
+
+    def test_save_summary_for_unauthenticated_user(self, client: TestClient, db_summary: dict[str, str]) -> None:
+        request = client.post(self.API_ENDPOINT, json=db_summary)
         assert request.status_code == status.HTTP_401_UNAUTHORIZED
 
 
