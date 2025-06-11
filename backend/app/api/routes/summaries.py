@@ -76,21 +76,21 @@ def create_task_summary(
     task_result_summary = utils.get_task_result(cache=cache, task_id=task_id_summary)
 
     if task_result_summary:
-        summary_in_cache = utils.create_response_model(
+        cache_summary = utils.create_response_model(
             essential_fields=summary_request.model_dump(),
             task_result=task_result_summary,
             response_model=SummaryResponse
         )
 
-        if summary_in_cache.status == TaskStatus.PENDING:
+        if cache_summary.status == TaskStatus.PENDING:
             return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={'message': 'The task already exists'})
-        elif summary_in_cache.status == TaskStatus.SUCCESS:
+        elif cache_summary.status == TaskStatus.SUCCESS:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={'message': 'The summary is already in the cache'}
             )
         else:
-            diff_curr_time = calc_diff_curr_time(summary_in_cache.details['date_done'])
+            diff_curr_time = calc_diff_curr_time(cache_summary.details['date_done'])
             sec_to_task_completion = settings.FAILURE_COOLDOWN_SEC - diff_curr_time
 
             if sec_to_task_completion > 0:
@@ -100,14 +100,14 @@ def create_task_summary(
                     content={'message': 'Some service is not working properly or is busy. Try the request again later'}
                 )
     else:
-        summary_in_db = crud.get_summary(
+        db_summary = crud.get_summary(
             session=session,
             video_link=summary_request.video_link,
             size=summary_request.size,
             language=summary_request.language
         )
 
-        if summary_in_db:
+        if db_summary:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={'message': 'The summary is already in the DB'}
@@ -162,14 +162,14 @@ def save_summary(
     """
     Saves the summary from the cache in the DB.
     """
-    summary_in_db = crud.get_summary(
+    db_summary = crud.get_summary(
         session=session,
         video_link=request.video_link,
         size=request.size,
         language=request.language
     )
 
-    if summary_in_db:
+    if db_summary:
         return JSONResponse(status_code=status.HTTP_200_OK, content={'message': 'The summary has already been saved'})
 
     task_id_summary = utils.TaskIdSummary.generate(
@@ -186,25 +186,25 @@ def save_summary(
             content={'message': 'The summary was not found in the cache'}
         )
 
-    summary_in_cache = utils.create_response_model(
+    cache_summary = utils.create_response_model(
         essential_fields=request.model_dump(),
         task_result=task_result,
         response_model=SummaryResponse
     )
 
-    if summary_in_cache.status != TaskStatus.SUCCESS:
+    if cache_summary.status != TaskStatus.SUCCESS:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={'message': 'The summary must be complete!'}
         )
 
-    video_in_db = session.get(Video, request.video_link)
+    db_video = session.get(Video, request.video_link)
 
-    if not video_in_db:
+    if not db_video:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={'message': 'The parent video for this summary was not found in the database.'}
         )
 
-    summary_in_db = crud.create_obj(session=session, obj=Summary.model_validate(summary_in_cache))
+    db_summary = crud.create_obj(session=session, obj=Summary.model_validate(cache_summary))
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={'message': 'The summary successfully saved'})

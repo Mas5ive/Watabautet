@@ -60,21 +60,21 @@ def create_task_video(
     task_result = utils.get_task_result(cache=cache, task_id=task_id_video)
 
     if task_result:
-        video_in_cache = utils.create_response_model(
+        cache_video = utils.create_response_model(
             essential_fields=request.model_dump(),
             task_result=task_result,
             response_model=VideoResponse
         )
 
-        if video_in_cache.status == TaskStatus.PENDING:
+        if cache_video.status == TaskStatus.PENDING:
             return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={'message': 'The task already exists'})
-        elif video_in_cache.status == TaskStatus.SUCCESS:
+        elif cache_video.status == TaskStatus.SUCCESS:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={'message': 'The video is already in the cache'}
             )
         else:
-            diff_curr_time = calc_diff_curr_time(video_in_cache.details['date_done'])
+            diff_curr_time = calc_diff_curr_time(cache_video.details['date_done'])
             sec_to_task_completion = settings.FAILURE_COOLDOWN_SEC - diff_curr_time
 
             if sec_to_task_completion > 0:
@@ -84,9 +84,9 @@ def create_task_video(
                     content={'message': 'Some service is not working properly or is busy. Try the request again later'}
                 )
     else:
-        video_in_db = session.get(Video, request.link)
+        db_video = session.get(Video, request.link)
 
-        if video_in_db:
+        if db_video:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={'message': 'The video is already in the DB'}
@@ -112,9 +112,9 @@ def save_video(
     """
     Saves the video from the cache in the DB.
     """
-    video_in_db = session.get(Video, request.link)
+    db_video = session.get(Video, request.link)
 
-    if video_in_db:
+    if db_video:
         return JSONResponse(status_code=status.HTTP_200_OK, content={'message': 'The video has already been saved'})
 
     task_id_video = utils.TaskIdVideo.generate(link=request.link, major_language=request.major_language)
@@ -126,17 +126,17 @@ def save_video(
             content={'message': 'The video was not found in the cache'}
         )
 
-    video_in_cache = utils.create_response_model(
+    cache_video = utils.create_response_model(
         essential_fields=request.model_dump(),
         task_result=task_result,
         response_model=VideoResponse
     )
 
-    if video_in_cache.status != TaskStatus.SUCCESS:
+    if cache_video.status != TaskStatus.SUCCESS:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={'message': 'The video must be complete!'}
         )
 
-    video_in_db = crud.create_obj(session=session, obj=Video.model_validate(video_in_cache))
+    db_video = crud.create_obj(session=session, obj=Video.model_validate(cache_video))
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={'message': 'The video successfully saved'})
