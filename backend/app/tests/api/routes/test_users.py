@@ -212,3 +212,54 @@ class TestDeleteSummaryForUser:
         assert request.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+class TestGetUsersLibrary:
+
+    API_ENDPOINT = f'{API_BASE_URL}/me/library'
+
+    @pytest.fixture()
+    def video_links(self, db: Session, userdata: dict[str, str]):
+        video_link_1 = 'q' * 11
+        video_link_2 = 'w' * 11
+        user = crud.get_user_by_name(session=db, name=userdata['name'])
+        t_utils.create_video_in_db(session=db, link=video_link_1)
+        t_utils.create_video_in_db(session=db, link=video_link_2)
+        summary_1 = t_utils.create_summary_in_db(session=db, video_link=video_link_1)
+        summary_2 = t_utils.create_summary_in_db(session=db, video_link=video_link_1, size='large')
+        summary_3 = t_utils.create_summary_in_db(session=db, video_link=video_link_2)
+        crud.link_user_with_summary(session=db, user=user, summary=summary_1)
+        crud.link_user_with_summary(session=db, user=user, summary=summary_2)
+        crud.link_user_with_summary(session=db, user=user, summary=summary_3)
+        yield (video_link_1, video_link_2)
+        db.exec(delete(UserSummary))
+        db.exec(delete(Summary))
+        db.exec(delete(Video))
+        db.commit()
+
+    def test_get_for_authenticated_user(
+            self, client: TestClient, user_token_headers: dict[str, str], video_links: tuple[str]
+    ) -> None:
+        request = client.get(self.API_ENDPOINT, headers=user_token_headers)
+        assert request.status_code == status.HTTP_200_OK
+        response = request.json()
+        assert 'videos' in response
+        videos = response['videos']
+        assert len(videos) == 2
+
+        video_1 = next((v for v in videos if v['link'] == video_links[0]), None)
+        assert video_1 is not None
+        assert len(video_1['summaries']) == 2
+
+        video_2 = next((v for v in videos if v['link'] == video_links[1]), None)
+        assert video_2 is not None
+        assert len(video_2['summaries']) == 1
+
+    def test_get_empty_library(self, client: TestClient, user_token_headers: dict[str, str]) -> None:
+        request = client.get(self.API_ENDPOINT, headers=user_token_headers)
+        assert request.status_code == status.HTTP_200_OK
+        response = request.json()
+        assert 'videos' in response
+        assert len(response['videos']) == 0
+
+    def test_get_for_unauthenticated_user(self, client: TestClient) -> None:
+        request = client.get(self.API_ENDPOINT)
+        assert request.status_code == status.HTTP_401_UNAUTHORIZED
