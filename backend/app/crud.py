@@ -39,7 +39,7 @@ def get_summary(*, session: Session, video_link: str, size: str, language: str) 
     return summary
 
 
-def get_user_with_summary(*, session=Session, user=User, summary=Summary) -> UserSummary | None:
+def get_user_with_summary(*, session: Session, user: User, summary: Summary) -> UserSummary | None:
     user_summary = session.exec(
         select(UserSummary).where(
             UserSummary.user_id == user.id,
@@ -49,7 +49,7 @@ def get_user_with_summary(*, session=Session, user=User, summary=Summary) -> Use
     return user_summary
 
 
-def link_user_with_summary(*, session=Session, user=User, summary=Summary) -> UserSummary:
+def link_user_with_summary(*, session: Session, user: User, summary: Summary) -> UserSummary:
     user_summary = UserSummary(user_id=user.id, summary_id=summary.id)
     session.add(user_summary)
     session.commit()
@@ -57,12 +57,12 @@ def link_user_with_summary(*, session=Session, user=User, summary=Summary) -> Us
     return user_summary
 
 
-def unlink_user_with_summary(*, session=Session, user_summary=UserSummary) -> None:
+def unlink_user_with_summary(*, session: Session, user_summary: UserSummary) -> None:
     session.delete(user_summary)
     session.commit()
 
 
-def get_users_summaries_with_video(*, session=Session, user=User) -> list[Summary]:
+def get_users_summaries_with_video(*, session: Session, user: User) -> list[Summary]:
     summaries_with_video = session.exec(
         select(Summary)
         .join(UserSummary)
