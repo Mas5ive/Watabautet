@@ -2,14 +2,15 @@ from typing import Annotated, Generator
 
 import jwt
 from app.core import security
-from redis import Redis
 from app.core.config import settings
 from app.core.db import engine
 from app.models import TokenPayload, User
+from celery import Celery
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
+from redis import Redis
 from sqlmodel import Session
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -32,6 +33,16 @@ def get_cache() -> Redis:
 
 
 CacheDep = Annotated[Redis, Depends(get_cache)]
+
+
+def get_celery() -> Celery:
+    from app.main import app
+    celery = app.state.celery
+    return celery
+
+
+CeleryDep = Annotated[Celery, Depends(get_celery)]
+
 
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 

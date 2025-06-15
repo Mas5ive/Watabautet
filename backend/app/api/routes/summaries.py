@@ -2,8 +2,7 @@ from typing import Annotated, Any
 
 from app import crud
 from app.api import utils
-from app.api.deps import CacheDep, CurrentUser, SessionDep
-from app.core.celery_client import celery_app
+from app.api.deps import CacheDep, CeleryDep, CurrentUser, SessionDep
 from app.core.config import settings
 from app.models import (Message, Summary, SummaryRequest, SummaryResponse,
                         TaskStatus, Video, VideoRequest, VideoResponse)
@@ -60,6 +59,7 @@ def get_summary(
 def create_task_summary(
     current_user: CurrentUser,
     session: SessionDep,
+    celery: CeleryDep,
     cache: CacheDep,
     summary_request: SummaryRequest,
     video_request: VideoRequest,
@@ -138,12 +138,12 @@ def create_task_summary(
             )
         video = db_video
 
-    celery_app.send_task(
+    celery.send_task(
         'app.tasks.make_summary',
         args=[summary_request.model_dump(exclude={'video_link'}), video.model_dump()],
         task_id=task_id_summary
     )
-    celery_app.backend.store_result(task_id=task_id_summary, result=None, state=TaskStatus.PENDING)
+    celery.backend.store_result(task_id=task_id_summary, result=None, state=TaskStatus.PENDING)
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={'message': 'The task has been created!'})
 
 

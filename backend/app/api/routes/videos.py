@@ -2,8 +2,7 @@ from typing import Annotated, Any
 
 from app import crud
 from app.api import utils
-from app.api.deps import CacheDep, CurrentUser, SessionDep
-from app.core.celery_client import celery_app
+from app.api.deps import CacheDep, CeleryDep, CurrentUser, SessionDep
 from app.core.config import settings
 from app.models import Message, TaskStatus, Video, VideoRequest, VideoResponse
 from app.utils import calc_diff_curr_time
@@ -50,6 +49,7 @@ def get_video(
 def create_task_video(
     current_user: CurrentUser,
     session: SessionDep,
+    celery: CeleryDep,
     cache: CacheDep,
     request: VideoRequest
 ) -> JSONResponse:
@@ -92,8 +92,8 @@ def create_task_video(
                 content={'message': 'The video is already in the DB'}
             )
 
-    celery_app.send_task('app.tasks.get_video_data', args=[request.model_dump()], task_id=task_id_video)
-    celery_app.backend.store_result(task_id=task_id_video, result=None, state=TaskStatus.PENDING)
+    celery.send_task('app.tasks.get_video_data', args=[request.model_dump()], task_id=task_id_video)
+    celery.backend.store_result(task_id=task_id_video, result=None, state=TaskStatus.PENDING)
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={'message': 'The task has been created!'})
 
 
