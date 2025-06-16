@@ -2,8 +2,8 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from app import crud
-from app.core.config import settings
-from app.models import Summary, TaskStatus, Video
+from app.models import Summary, Video
+from celery import states
 from kombu import Connection
 from redis import Redis
 from sqlmodel import Session
@@ -58,7 +58,7 @@ def create_summary_in_db(
 def create_item_in_cache(
     cache: Redis,
     task_id: str,
-    status: TaskStatus = TaskStatus.PENDING,
+    status: str = states.PENDING,
     result: dict | None = None,
     traceback: str | None = None,
     children: list | None = None,

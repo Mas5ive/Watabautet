@@ -2,7 +2,8 @@ import app.api.utils as utils
 import app.tests.utils as t_utils
 import pytest
 from app.core.config import settings
-from app.models import TaskStatus, Video
+from app.models import Video
+from celery import states
 from fastapi import status
 from fastapi.testclient import TestClient
 from redis import Redis
@@ -38,7 +39,7 @@ class TestGetVideo:
         yield t_utils.create_item_in_cache(
             cache=cache,
             task_id=utils.TaskIdVideo.generate(**VIDEO_PARAMS),
-            status=TaskStatus.SUCCESS,
+            status=states.SUCCESS,
             result=COMMON_VIDEO_ATTRIBUTES,
             date_done='2025-03-26T19:13:53.395702+00:00'
         )
@@ -93,7 +94,7 @@ class TestSaveVideo:
         cache_video(
             cache=cache,
             task_id=utils.TaskIdVideo.generate(**VIDEO_PARAMS),
-            status=TaskStatus.SUCCESS,
+            status=states.SUCCESS,
             result=COMMON_VIDEO_ATTRIBUTES,
             date_done='2025-03-26T19:13:53.395702+00:00'
         )
@@ -112,7 +113,7 @@ class TestSaveVideo:
         cache_video(
             cache=cache,
             task_id=utils.TaskIdVideo.generate(**VIDEO_PARAMS),
-            status=TaskStatus.SUCCESS,
+            status=states.SUCCESS,
             result=COMMON_VIDEO_ATTRIBUTES,
             date_done='2025-03-26T19:13:53.395702+00:00'
         )
@@ -134,7 +135,7 @@ class TestSaveVideo:
         cache_video(
             cache=cache,
             task_id=utils.TaskIdVideo.generate(**VIDEO_PARAMS),
-            status=TaskStatus.PENDING,
+            status=states.PENDING,
             result=None,
             date_done=None
         )
@@ -179,7 +180,7 @@ class TestCreateTaskVideo:
         task_id = utils.TaskIdVideo.generate(**VIDEO_PARAMS)
         task_result = utils.get_task_result(cache=cache, task_id=task_id)
         assert task_result is not None
-        assert task_result['status'] == TaskStatus.PENDING
+        assert task_result['status'] == states.PENDING
         assert task_result['result'] is None
 
     def test_create_when_task_is_in_cache_with_status_pending(
@@ -202,7 +203,7 @@ class TestCreateTaskVideo:
         cache_video(
             cache=cache,
             task_id=utils.TaskIdVideo.generate(**VIDEO_PARAMS),
-            status=TaskStatus.SUCCESS,
+            status=states.SUCCESS,
             result=COMMON_VIDEO_ATTRIBUTES,
             date_done='2025-03-26T19:13:53.395702+00:00'
         )
@@ -219,7 +220,7 @@ class TestCreateTaskVideo:
         cache_video(
             cache=cache,
             task_id=utils.TaskIdVideo.generate(**VIDEO_PARAMS),
-            status=TaskStatus.FAILURE,
+            status=states.FAILURE,
             result={
                 'exc_type': 'Exception',
                 'exc_message': [],
@@ -241,7 +242,7 @@ class TestCreateTaskVideo:
         cache_video(
             cache=cache,
             task_id=utils.TaskIdVideo.generate(**VIDEO_PARAMS),
-            status=TaskStatus.FAILURE,
+            status=states.FAILURE,
             result={
                 'exc_type': 'Exception',
                 'exc_message': [],

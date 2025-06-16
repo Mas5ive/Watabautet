@@ -1,7 +1,5 @@
 import uuid
-from enum import Enum
 
-from celery import states
 from sqlmodel import CheckConstraint, Field, Relationship, SQLModel
 
 youtube_video_link = Field(schema_extra={'pattern': r'^[a-zA-Z0-9_-]{11}$'})
@@ -24,12 +22,6 @@ class User(UserBase, table=True):
 class UserRegister(SQLModel):
     name: str = Field(unique=True, index=True, max_length=20)
     password: str = Field(min_length=8, max_length=40)
-
-
-class TaskStatus(str, Enum):
-    PENDING = states.PENDING
-    FAILURE = states.FAILURE
-    SUCCESS = states.SUCCESS
 
 
 class VideoView(SQLModel):
