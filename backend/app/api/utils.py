@@ -1,8 +1,4 @@
-import json
 import uuid
-
-from app.core.config import settings
-from redis import Redis
 
 
 class _TaskId:
@@ -81,9 +77,3 @@ class TaskIdVideo(_TaskId):
             str: The generated UUIDv5 string.
         """
         return super().generate(link, major_language)
-
-
-def get_task_result(*, cache: Redis, task_id: str) -> dict | None:
-    if value := cache.get(settings.CACHE_KEY_PREFIX + task_id):
-        task_result = json.loads(value.decode('utf-8'))
-        return task_result

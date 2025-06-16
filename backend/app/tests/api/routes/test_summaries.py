@@ -242,7 +242,7 @@ class TestCreateTaskSummary:
         assert summary_data['size'] == SUMMARY_PARAMS['size']
         assert video_data == {**VIDEO_PARAMS,  **COMMON_VIDEO_ATTRIBUTES}
         task_id = utils.TaskIdSummary.generate(**SUMMARY_PARAMS)
-        task_result = utils.get_task_result(cache=cache, task_id=task_id)
+        task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is not None
         assert task_result['status'] == states.PENDING
         assert task_result['result'] is None
@@ -266,7 +266,7 @@ class TestCreateTaskSummary:
         message_data = t_utils.get_data_from_message(task_queue)
         assert message_data is None
         task_id = utils.TaskIdSummary.generate(**SUMMARY_PARAMS)
-        task_result = utils.get_task_result(cache=cache, task_id=task_id)
+        task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is None
 
     def test_create_when_parent_video_is_in_db(
@@ -285,7 +285,7 @@ class TestCreateTaskSummary:
         assert summary_data['size'] == SUMMARY_PARAMS['size']
         assert video_data == {**VIDEO_PARAMS,  **COMMON_VIDEO_ATTRIBUTES}
         task_id = utils.TaskIdSummary.generate(**SUMMARY_PARAMS)
-        task_result = utils.get_task_result(cache=cache, task_id=task_id)
+        task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is not None
         assert task_result['status'] == states.PENDING
         assert task_result['result'] is None
@@ -304,7 +304,7 @@ class TestCreateTaskSummary:
         message_data = t_utils.get_data_from_message(task_queue)
         assert message_data is None
         task_id = utils.TaskIdSummary.generate(**SUMMARY_PARAMS)
-        task_result = utils.get_task_result(cache=cache, task_id=task_id)
+        task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is None
 
     def test_create_when_task_is_in_cache_with_status_pending(

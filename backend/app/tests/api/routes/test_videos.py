@@ -178,7 +178,7 @@ class TestCreateTaskVideo:
         video_data = t_utils.get_data_from_message(task_queue)[0]
         assert video_data == VIDEO_PARAMS
         task_id = utils.TaskIdVideo.generate(**VIDEO_PARAMS)
-        task_result = utils.get_task_result(cache=cache, task_id=task_id)
+        task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is not None
         assert task_result['status'] == states.PENDING
         assert task_result['result'] is None

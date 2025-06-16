@@ -9,6 +9,7 @@ from redis import Redis
 from sqlmodel import Session
 
 VIDEO_LINK = 'v' * 11
+CACHE_KEY_PREFIX: str = 'celery-task-meta-'
 
 
 def create_video_in_db(
@@ -112,7 +113,7 @@ def create_item_in_cache(
     }
     ```
     """
-    cache_key = settings.CACHE_KEY_PREFIX + task_id
+    cache_key = CACHE_KEY_PREFIX + task_id
     data = {
         'status': status,
         'result': result,
@@ -122,6 +123,12 @@ def create_item_in_cache(
         'task_id': task_id
     }
     cache.set(cache_key, json.dumps(data))
+
+
+def get_item_from_cache(*, cache: Redis, task_id: str) -> dict | None:
+    if value := cache.get(CACHE_KEY_PREFIX + task_id):
+        task_result = json.loads(value.decode('utf-8'))
+        return task_result
 
 
 def get_data_from_message(task_queue: Connection.SimpleQueue) -> list[dict[str, str]] | None:
