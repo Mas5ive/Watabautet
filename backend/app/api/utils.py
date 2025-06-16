@@ -1,9 +1,7 @@
 import json
 import uuid
-from typing import Type, TypeVar
 
 from app.core.config import settings
-from app.models import SummaryResponse, TaskStatus, VideoResponse
 from redis import Redis
 
 
@@ -89,58 +87,3 @@ def get_task_result(*, cache: Redis, task_id: str) -> dict | None:
     if value := cache.get(settings.CACHE_KEY_PREFIX + task_id):
         task_result = json.loads(value.decode('utf-8'))
         return task_result
-
-
-_ResponseModel = TypeVar('_ResponseModel', SummaryResponse, VideoResponse)
-
-
-def create_response_model(
-    *,
-    essential_fields: dict,
-    task_result: dict,
-    response_model: Type[_ResponseModel],
-) -> _ResponseModel:
-    """
-    Generates an instance of the Pydantic response model (`SummaryResponse` or `VideoResponse`) based
-    on the result of the background task and mandatory fields.
-
-    Depending on the task status (`TaskStatus`), the behavior is as follows:
-    - **SUCCESS**: fields from `task_result[“result”]` (e.g. `text`, `title`, `description`) are added.
-    - **FAILURE**: details of the error are added as `details`, including `date_done` and `exc_message`.
-    - **PENDING**: status only with no additional data.
-
-    Arguments:
-        essential_fields (dict): Fields required to be included in the response,
-        task_result (dict): A dictionary containing the result of the background task Celery:
-            {
-                "status": "SUCCESS" | "FAILURE" | "PENDING",
-                "result": {...}, # structure depends on status
-                "date_done": str, # when FAILURE
-            }
-        response_model (Type[_ResponseModel]): Pydantic model into which the response will be assembled.
-
-    Returns:
-        _ResponseModel: an instance of `SummaryResponse` or `VideoResponse` containing the merged data.
-
-    Exceptions:
-        ValueError: If `task_result['status']` is not a valid value of `TaskStatus`.
-    """
-    try:
-        status = TaskStatus(task_result['status'])
-    except ValueError:
-        raise ValueError(f"Incorrect task status: {task_result['status']}")
-
-    other_fields = {'status': status}
-
-    if status == TaskStatus.SUCCESS:
-        other_fields.update(task_result['result'])
-
-    if status == TaskStatus.FAILURE:
-        other_fields.update({
-            'details': {
-                'date_done': task_result['date_done'],
-                'exc_message': task_result['result']['exc_message']
-            }
-        })
-
-    return response_model(**essential_fields, **other_fields)

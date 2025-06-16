@@ -10,7 +10,6 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
-from redis import Redis
 from sqlmodel import Session
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -24,15 +23,6 @@ def get_db() -> Generator[Session, None, None]:
 
 
 SessionDep = Annotated[Session, Depends(get_db)]
-
-
-def get_cache() -> Redis:
-    from app.main import app
-    cache = app.state.redis_con
-    return cache
-
-
-CacheDep = Annotated[Redis, Depends(get_cache)]
 
 
 def get_celery() -> Celery:

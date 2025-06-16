@@ -1,4 +1,3 @@
-
 import uuid
 from enum import Enum
 
@@ -33,11 +32,6 @@ class TaskStatus(str, Enum):
     SUCCESS = states.SUCCESS
 
 
-class Task(SQLModel):
-    status: TaskStatus = TaskStatus.SUCCESS
-    details: dict | None = None
-
-
 class VideoView(SQLModel):
     link: str = youtube_video_link
     title: str
@@ -48,7 +42,7 @@ class VideoRequest(SQLModel):
     major_language: str = Field(max_length=5)
 
 
-class VideoResponse(VideoRequest, Task):
+class VideoResponse(VideoRequest):
     category: str | None = None
     description: str | None = None
     text: str | None = None
@@ -78,7 +72,7 @@ class SummaryRequest(SummaryBase):
     video_link: str = youtube_video_link
 
 
-class SummaryResponse(SummaryRequest, Task):
+class SummaryResponse(SummaryRequest):
     text: str | None = None
 
 
