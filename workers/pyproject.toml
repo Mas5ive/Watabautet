@@ -6,8 +6,9 @@ authors = [{ name = "Mas5ive", email = "empty@empty" }]
 requires-python = ">=3.13, <4.0"
 dependencies = [
     "celery<6.0.0,>=5.4.0",
-    "google-api-python-client<3.0.0,>=2.163.0",
-    "redis<6.0.0,>=5.2.1",
+    "google-generativeai>=0.8.5,<0.9.0",
+    "redis>=5.2.1,<6.0.0",
+    "yt-dlp==2025.6.9",
 ]
 
 [dependency-groups]
