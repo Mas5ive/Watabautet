@@ -65,15 +65,14 @@ class TaskIdVideo(_TaskId):
     """
 
     @classmethod
-    def generate(cls, *, link: str, major_language: str) -> str:
+    def generate(cls, *, link: str) -> str:
         """
         Generates a unique video task identifier.
 
         Args:
             link (str): The video link.
-            major_language (str): the main language in the video.
 
         Returns:
             str: The generated UUIDv5 string.
         """
-        return super().generate(link, major_language)
+        return super().generate(link)

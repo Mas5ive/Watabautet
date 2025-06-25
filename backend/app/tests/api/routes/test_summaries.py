@@ -13,10 +13,7 @@ from sqlmodel import Session, delete
 API_BASE_URL = f'{settings.API_V1_STR}/summaries'
 
 
-VIDEO_PARAMS = {
-    'link': 'q' * 11,
-    'major_language': 'ru'
-}
+VIDEO_LINK = 'q' * 11
 COMMON_VIDEO_ATTRIBUTES = {
     'description': 'bla-bla',
     'text': 'bla-bla',
@@ -25,7 +22,7 @@ COMMON_VIDEO_ATTRIBUTES = {
 }
 
 SUMMARY_PARAMS = {
-    'video_link': VIDEO_PARAMS['link'],
+    'video_link': VIDEO_LINK,
     'size': 'small',
     'language': 'ru'
 }
@@ -38,7 +35,7 @@ class TestGetSummary:
 
     @pytest.fixture(scope='class', autouse=True)
     def db_video(self, db: Session):
-        yield t_utils.create_video_in_db(session=db, link=VIDEO_PARAMS['link'])
+        yield t_utils.create_video_in_db(session=db, link=VIDEO_LINK)
         db.exec(delete(Video))
         db.commit()
 
@@ -94,7 +91,7 @@ class TestSaveSummary:
 
     @pytest.fixture(scope='class', autouse=True)
     def db_video(self, db: Session):
-        yield t_utils.create_video_in_db(session=db, link=VIDEO_PARAMS['link'])
+        yield t_utils.create_video_in_db(session=db, link=VIDEO_LINK)
         db.exec(delete(Video))
         db.commit()
 
@@ -196,7 +193,7 @@ class TestCreateTaskSummary:
 
     @pytest.fixture
     def db_video(self, db: Session):
-        yield t_utils.create_video_in_db(session=db, link=VIDEO_PARAMS['link'])
+        yield t_utils.create_video_in_db(session=db, link=VIDEO_LINK)
         db.exec(delete(Video))
         db.commit()
 
@@ -224,7 +221,7 @@ class TestCreateTaskSummary:
     ) -> None:
         cache_video(
             cache=cache,
-            task_id=utils.TaskIdVideo.generate(**VIDEO_PARAMS),
+            task_id=utils.TaskIdVideo.generate(link=VIDEO_LINK),
             status=states.SUCCESS,
             result=COMMON_VIDEO_ATTRIBUTES,
             date_done='2025-03-26T19:13:53.395702+00:00'
@@ -232,7 +229,7 @@ class TestCreateTaskSummary:
         request = client.post(
             self.API_ENDPOINT,
             headers=user_token_headers,
-            json={'summary_request': SUMMARY_PARAMS, 'video_request': VIDEO_PARAMS}
+            json={'summary_request': SUMMARY_PARAMS, 'video_request': {'link': VIDEO_LINK}}
         )
         assert request.status_code == status.HTTP_202_ACCEPTED
         response = request.json()
@@ -240,7 +237,7 @@ class TestCreateTaskSummary:
         summary_data, video_data = t_utils.get_data_from_message(task_queue)
         assert summary_data['language'] == SUMMARY_PARAMS['language']
         assert summary_data['size'] == SUMMARY_PARAMS['size']
-        assert video_data == {**VIDEO_PARAMS,  **COMMON_VIDEO_ATTRIBUTES}
+        assert video_data == {'link': VIDEO_LINK,  **COMMON_VIDEO_ATTRIBUTES}
         task_id = utils.TaskIdSummary.generate(**SUMMARY_PARAMS)
         task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is not None
@@ -252,13 +249,13 @@ class TestCreateTaskSummary:
     ) -> None:
         cache_video(
             cache=cache,
-            task_id=utils.TaskIdVideo.generate(**VIDEO_PARAMS),
+            task_id=utils.TaskIdVideo.generate(link=VIDEO_LINK),
             status=states.PENDING,
         )
         request = client.post(
             self.API_ENDPOINT,
             headers=user_token_headers,
-            json={'summary_request': SUMMARY_PARAMS, 'video_request': VIDEO_PARAMS}
+            json={'summary_request': SUMMARY_PARAMS, 'video_request': {'link': VIDEO_LINK}}
         )
         assert request.status_code == status.HTTP_400_BAD_REQUEST
         response = request.json()
@@ -275,7 +272,7 @@ class TestCreateTaskSummary:
         request = client.post(
             self.API_ENDPOINT,
             headers=user_token_headers,
-            json={'summary_request': SUMMARY_PARAMS, 'video_request': VIDEO_PARAMS}
+            json={'summary_request': SUMMARY_PARAMS, 'video_request': {'link': VIDEO_LINK}}
         )
         assert request.status_code == status.HTTP_202_ACCEPTED
         response = request.json()
@@ -283,7 +280,7 @@ class TestCreateTaskSummary:
         summary_data, video_data = t_utils.get_data_from_message(task_queue)
         assert summary_data['language'] == SUMMARY_PARAMS['language']
         assert summary_data['size'] == SUMMARY_PARAMS['size']
-        assert video_data == {**VIDEO_PARAMS,  **COMMON_VIDEO_ATTRIBUTES}
+        assert video_data == {'link': VIDEO_LINK,  **COMMON_VIDEO_ATTRIBUTES}
         task_id = utils.TaskIdSummary.generate(**SUMMARY_PARAMS)
         task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is not None
@@ -296,7 +293,7 @@ class TestCreateTaskSummary:
         request = client.post(
             self.API_ENDPOINT,
             headers=user_token_headers,
-            json={'summary_request': SUMMARY_PARAMS, 'video_request': VIDEO_PARAMS}
+            json={'summary_request': SUMMARY_PARAMS, 'video_request': {'link': VIDEO_LINK}}
         )
         assert request.status_code == status.HTTP_400_BAD_REQUEST
         response = request.json()
@@ -318,7 +315,7 @@ class TestCreateTaskSummary:
         request = client.post(
             self.API_ENDPOINT,
             headers=user_token_headers,
-            json={'summary_request': SUMMARY_PARAMS, 'video_request': VIDEO_PARAMS}
+            json={'summary_request': SUMMARY_PARAMS, 'video_request': {'link': VIDEO_LINK}}
         )
         assert request.status_code == status.HTTP_400_BAD_REQUEST
         response = request.json()
@@ -339,7 +336,7 @@ class TestCreateTaskSummary:
         request = client.post(
             self.API_ENDPOINT,
             headers=user_token_headers,
-            json={'summary_request': SUMMARY_PARAMS, 'video_request': VIDEO_PARAMS}
+            json={'summary_request': SUMMARY_PARAMS, 'video_request': {'link': VIDEO_LINK}}
         )
         assert request.status_code == status.HTTP_400_BAD_REQUEST
         response = request.json()
@@ -365,7 +362,7 @@ class TestCreateTaskSummary:
         request = client.post(
             self.API_ENDPOINT,
             headers=user_token_headers,
-            json={'summary_request': SUMMARY_PARAMS, 'video_request': VIDEO_PARAMS}
+            json={'summary_request': SUMMARY_PARAMS, 'video_request': {'link': VIDEO_LINK}}
         )
         assert request.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
         response = request.json()
@@ -392,7 +389,7 @@ class TestCreateTaskSummary:
         request = client.post(
             self.API_ENDPOINT,
             headers=user_token_headers,
-            json={'summary_request': SUMMARY_PARAMS, 'video_request': VIDEO_PARAMS}
+            json={'summary_request': SUMMARY_PARAMS, 'video_request': {'link': VIDEO_LINK}}
         )
         assert request.status_code == status.HTTP_202_ACCEPTED
         response = request.json()
@@ -400,7 +397,7 @@ class TestCreateTaskSummary:
         summary_data, video_data = t_utils.get_data_from_message(task_queue)
         assert summary_data['language'] == SUMMARY_PARAMS['language']
         assert summary_data['size'] == SUMMARY_PARAMS['size']
-        assert video_data == {**VIDEO_PARAMS,  **COMMON_VIDEO_ATTRIBUTES}
+        assert video_data == {'link': VIDEO_LINK,  **COMMON_VIDEO_ATTRIBUTES}
 
     def test_create_for_existing_summary_in_db(
             self, client: TestClient, user_token_headers: dict[str, str], db_video, db_summary, task_queue
@@ -408,7 +405,7 @@ class TestCreateTaskSummary:
         request = client.post(
             self.API_ENDPOINT,
             headers=user_token_headers,
-            json={'summary_request': SUMMARY_PARAMS, 'video_request': VIDEO_PARAMS}
+            json={'summary_request': SUMMARY_PARAMS, 'video_request': {'link': VIDEO_LINK}}
         )
         assert request.status_code == status.HTTP_400_BAD_REQUEST
         response = request.json()
@@ -419,6 +416,6 @@ class TestCreateTaskSummary:
     def test_create_for_unauthenticated_user(self, client: TestClient) -> None:
         request = client.post(
             self.API_ENDPOINT,
-            json={'summary_request': SUMMARY_PARAMS, 'video_request': VIDEO_PARAMS}
+            json={'summary_request': SUMMARY_PARAMS, 'video_request': {'link': VIDEO_LINK}}
         )
         assert request.status_code == status.HTTP_401_UNAUTHORIZED

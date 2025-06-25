@@ -23,7 +23,7 @@ def get_video(
     """
     Get video from cache or database. The video in the cache must have a successful completion status to be taken.
     """
-    task_id_video = utils.TaskIdVideo.generate(link=request.link, major_language=request.major_language)
+    task_id_video = utils.TaskIdVideo.generate(link=request.link)
     task_data = celery.backend.get_task_meta(task_id_video)
 
     # If the length of task_data is <= 2, the task is not in the cache.
@@ -51,7 +51,7 @@ def create_task_video(
     """
     Creates a background task to process video data if no existing task is currently in progress or recently failed
     """
-    task_id_video = utils.TaskIdVideo.generate(link=request.link, major_language=request.major_language)
+    task_id_video = utils.TaskIdVideo.generate(link=request.link)
     task_data = celery.backend.get_task_meta(task_id_video)
 
     # If the length of task_data is <= 2, the task is not in the cache. And if it is not in the cache,
@@ -109,7 +109,7 @@ def save_video(
     if db_video:
         return JSONResponse(status_code=status.HTTP_200_OK, content={'message': 'The video has already been saved'})
 
-    task_id_video = utils.TaskIdVideo.generate(link=request.link, major_language=request.major_language)
+    task_id_video = utils.TaskIdVideo.generate(link=request.link)
     task_data = celery.backend.get_task_meta(task_id_video)
 
     # If the length of task_data is <= 2, the task is not in the cache.

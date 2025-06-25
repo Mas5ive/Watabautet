@@ -106,7 +106,7 @@ def create_task_summary(
                 content={'message': 'The summary is already in the DB'}
             )
 
-    task_id_video = utils.TaskIdVideo.generate(link=video_request.link, major_language=video_request.major_language)
+    task_id_video = utils.TaskIdVideo.generate(link=video_request.link)
     task_data_video = celery.backend.get_task_meta(task_id_video)
 
     # If the length of task_data is <= 2, the task is not in the cache.

@@ -15,7 +15,6 @@ CACHE_KEY_PREFIX: str = 'celery-task-meta-'
 def create_video_in_db(
     session: Session,
     link: str = VIDEO_LINK,
-    major_language: str = 'ru',
     description: str = 'bla-bla',
     text: str = 'bla-bla',
     category: str = 'comedy',
@@ -27,7 +26,6 @@ def create_video_in_db(
 
     video = crud.create_obj(session=session, obj=Video(
         link=link,
-        major_language=major_language,
         description=description,
         text=text,
         category=category,

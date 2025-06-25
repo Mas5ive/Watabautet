@@ -24,14 +24,12 @@ class UserRegister(SQLModel):
     password: str = Field(min_length=8, max_length=40)
 
 
-class VideoView(SQLModel):
-    link: str = youtube_video_link
-    title: str
-
-
 class VideoRequest(SQLModel):
     link: str = youtube_video_link
-    major_language: str = Field(max_length=5)
+
+
+class VideoView(VideoRequest):
+    title: str
 
 
 class VideoResponse(VideoRequest):
@@ -45,7 +43,6 @@ class Video(SQLModel, table=True):
     category: str
     description: str
     link: str | None = Field(default=None, primary_key=True)
-    major_language: str
     text: str
     title: str
     summaries: list["Summary"] = Relationship(back_populates="video", cascade_delete=True)
