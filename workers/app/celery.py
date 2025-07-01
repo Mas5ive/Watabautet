@@ -1,7 +1,9 @@
 import os
 
-from celery import Celery
+from celery import Celery, Task
 from celery.utils.log import get_task_logger
+from requests.exceptions import RequestException
+from yt_dlp.utils import DownloadError
 
 RABBITMQ_USER = os.getenv('RABBITMQ_DEFAULT_USER')
 RABBITMQ_PASS = os.getenv('RABBITMQ_DEFAULT_PASS')
@@ -12,14 +14,19 @@ REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 REDIS_HOST = os.getenv('REDIS_HOST')
 REDIS_PORT = os.getenv('REDIS_PORT')
 
-CELERY_RESULT_EXPIRES = int(os.getenv('CELERY_RESULT_EXPIRES', 86400))
-CELERY_TASK_RETRY_DELAY = int(os.getenv('CELERY_TASK_RETRY_DELAY', 10))
-CELERY_TASK_MAX_RETRIES = int(os.getenv('CELERY_TASK_MAX_RETRIES', 3))
-
 broker_url = f'pyamqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/'
 cache_url = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0'
 
-app = Celery('celery', broker=broker_url, backend=cache_url, include=['app.tasks'])
+
+class CustomTask(Task):
+    autoretry_for = (DownloadError, RequestException)
+    retry_backoff = True
+    max_retries = int(os.getenv('CELERY_TASK_MAX_RETRIES', 8))
+    retry_backoff_max = int(os.getenv('CELERY_TASK_BACKOFF_MAX', 600))
+    retry_jitter = True
+
+
+app = Celery('celery', task_cls=CustomTask, broker=broker_url, backend=cache_url, include=['app.tasks'])
 
 app.conf.update(
     task_serializer='json',
@@ -27,7 +34,7 @@ app.conf.update(
     accept_content=['json'],
     timezone='UTC',
     enable_utc=True,
-    result_expires=CELERY_RESULT_EXPIRES,
+    result_expires=int(os.getenv('CELERY_RESULT_EXPIRES', 86400)),
     task_acks_late=True,
     task_acks_on_failure_or_timeout=True,
     task_reject_on_worker_lost=True,
