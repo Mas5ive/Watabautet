@@ -33,21 +33,100 @@ class TestGetVideo:
 
     @pytest.fixture
     def cache_video(self, cache: Redis):
-        yield t_utils.create_item_in_cache(
+        yield t_utils.create_item_in_cache
+        cache.flushall()
+
+    def test_get_when_task_is_in_cache_with_status_success(
+            self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_video
+    ) -> None:
+        cache_video(
             cache=cache,
             task_id=utils.TaskIdVideo.generate(link=VIDEO_LINK),
             status=states.SUCCESS,
             result=COMMON_VIDEO_ATTRIBUTES,
             date_done='2025-03-26T19:13:53.395702+00:00'
         )
-        cache.flushall()
-
-    def test_get_from_cache(self, client: TestClient, user_token_headers: dict[str, str], cache_video) -> None:
         request = client.get(self.API_ENDPOINT, params={'link': VIDEO_LINK}, headers=user_token_headers)
         assert request.status_code == status.HTTP_200_OK
         response = request.json()
         assert response['category'] == COMMON_VIDEO_ATTRIBUTES['category']
         assert response['link'] == VIDEO_LINK
+
+    def test_get_when_task_is_in_cache_with_impossibletaskerror(
+            self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_video
+    ) -> None:
+        cache_video(
+            cache=cache,
+            task_id=utils.TaskIdVideo.generate(link=VIDEO_LINK),
+            status=states.FAILURE,
+            result={
+                'exc_type': 'ImpossibleTaskError',
+                'exc_message': ['Reason: Private video'],
+                'exc_module': 'app.tasks'
+            },
+            traceback='Traceback (most recent call last): ... ImpossibleTaskError... ',
+            date_done='2025-03-26T19:13:53.395702+00:00'
+        )
+        request = client.get(self.API_ENDPOINT, params={'link': VIDEO_LINK}, headers=user_token_headers)
+        assert request.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        response = request.json()
+        assert response['message'] == 'Reason: Private video'
+
+    def test_get_when_task_is_in_cache_with_status_failed(
+            self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_video
+    ) -> None:
+        cache_video(
+            cache=cache,
+            task_id=utils.TaskIdVideo.generate(link=VIDEO_LINK),
+            status=states.FAILURE,
+            result={
+                'exc_type': 'Exception',
+                'exc_message': [],
+                'exc_module': 'builtins'
+            },
+            traceback='Traceback (most recent call last): ...',
+            date_done=t_utils.get_formatted_time_offset()
+        )
+        request = client.get(self.API_ENDPOINT, headers=user_token_headers, params={'link': VIDEO_LINK})
+        assert request.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+        response = request.json()
+        assert response['message'] == 'Some service is not working properly or is busy. Try the request again later'
+        assert 'Retry-After' in request.headers
+
+    def test_get_when_task_is_in_cache_with_status_failed_but_cooled_down(
+            self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_video
+    ) -> None:
+        cache_video(
+            cache=cache,
+            task_id=utils.TaskIdVideo.generate(link=VIDEO_LINK),
+            status=states.FAILURE,
+            result={
+                'exc_type': 'Exception',
+                'exc_message': [],
+                'exc_module': 'builtins'
+            },
+            traceback='Traceback (most recent call last): ...',
+            date_done=t_utils.get_formatted_time_offset(offset=-settings.FAILURE_COOLDOWN_SEC)
+        )
+        request = client.get(self.API_ENDPOINT, params={'link': VIDEO_LINK}, headers=user_token_headers)
+        assert request.status_code == status.HTTP_404_NOT_FOUND
+
+    @pytest.mark.parametrize(
+        'task_status',
+        [states.PENDING, states.STARTED, states.RETRY],
+    )
+    def test_get_when_task_is_in_cache_with_in_progress_status(
+            self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_video, task_status: str
+    ) -> None:
+        cache_video(
+            cache=cache,
+            task_id=utils.TaskIdVideo.generate(link=VIDEO_LINK),
+            status=task_status,
+        )
+        request = client.get(self.API_ENDPOINT, params={'link': VIDEO_LINK}, headers=user_token_headers)
+        assert request.status_code == status.HTTP_202_ACCEPTED
+        response = request.json()
+        assert response['message'] == 'Getting the video is in progress'
 
     def test_get_from_db(self, client: TestClient, user_token_headers: dict[str, str], db_video) -> None:
         request = client.get(self.API_ENDPOINT, params={'link': VIDEO_LINK}, headers=user_token_headers)
