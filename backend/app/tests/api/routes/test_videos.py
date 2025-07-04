@@ -259,12 +259,18 @@ class TestCreateTaskVideo:
         assert task_result['status'] == states.PENDING
         assert task_result['result'] is None
 
-    def test_create_when_task_is_in_cache_with_status_pending(
-            self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_video, task_queue
+    @pytest.mark.parametrize(
+        'task_status',
+        [states.PENDING, states.STARTED, states.RETRY, states.SUCCESS],
+    )
+    def test_create_when_task_is_in_cache_with_status_non_failed(
+            self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_video,
+            task_queue, task_status: str
     ) -> None:
         cache_video(
             cache=cache,
-            task_id=utils.TaskIdVideo.generate(link=VIDEO_LINK)
+            task_id=utils.TaskIdVideo.generate(link=VIDEO_LINK),
+            status=task_status
         )
         request = client.post(self.API_ENDPOINT, headers=user_token_headers, json={'link': VIDEO_LINK})
         assert request.status_code == status.HTTP_400_BAD_REQUEST
@@ -273,20 +279,25 @@ class TestCreateTaskVideo:
         message_data = t_utils.get_data_from_message(task_queue)
         assert message_data is None
 
-    def test_create_when_task_is_in_cache_with_status_success(
+    def test_create_when_task_is_in_cache_with_impossibletaskerror(
             self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_video, task_queue
     ) -> None:
         cache_video(
             cache=cache,
             task_id=utils.TaskIdVideo.generate(link=VIDEO_LINK),
-            status=states.SUCCESS,
-            result=COMMON_VIDEO_ATTRIBUTES,
+            status=states.FAILURE,
+            result={
+                'exc_type': 'ImpossibleTaskError',
+                'exc_message': ['Reason: Private video'],
+                'exc_module': 'app.tasks'
+            },
+            traceback='Traceback (most recent call last): ... ImpossibleTaskError... ',
             date_done='2025-03-26T19:13:53.395702+00:00'
         )
         request = client.post(self.API_ENDPOINT, headers=user_token_headers, json={'link': VIDEO_LINK})
         assert request.status_code == status.HTTP_400_BAD_REQUEST
         response = request.json()
-        assert response['message'] == 'The video is already in the cache'
+        assert response['message'] == 'The task already exists'
         message_data = t_utils.get_data_from_message(task_queue)
         assert message_data is None
 
@@ -302,6 +313,7 @@ class TestCreateTaskVideo:
                 'exc_message': [],
                 'exc_module': 'builtins'
             },
+            traceback='Traceback (most recent call last): ... ',
             date_done=t_utils.get_formatted_time_offset()
         )
         request = client.post(self.API_ENDPOINT, headers=user_token_headers, json={'link': VIDEO_LINK})
@@ -324,6 +336,7 @@ class TestCreateTaskVideo:
                 'exc_message': [],
                 'exc_module': 'builtins'
             },
+            traceback='Traceback (most recent call last): ... ',
             date_done=t_utils.get_formatted_time_offset(offset=-settings.FAILURE_COOLDOWN_SEC)
         )
         request = client.post(self.API_ENDPOINT, headers=user_token_headers, json={'link': VIDEO_LINK})
