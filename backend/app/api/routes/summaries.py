@@ -97,13 +97,10 @@ def create_task_summary(
     # then it was never created. At the very bottom of the endpoint there is a call that writes the task metadata
     # into the cache. After that it has more than 2 metadata.
     if len(task_data_summary) > 2:
-        if task_data_summary['status'] == states.SUCCESS:
-            return JSONResponse(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                content={'message': 'The summary is already in the cache'}
-            )
-
-        elif task_data_summary['status'] == states.FAILURE:
+        if (
+            task_data_summary['status'] == states.FAILURE and
+            'ImpossibleTaskError' not in task_data_summary['traceback']
+        ):
             diff_curr_time = calc_diff_curr_time(task_data_summary['date_done'])
             sec_to_task_completion = settings.FAILURE_COOLDOWN_SEC - diff_curr_time
 
@@ -116,14 +113,14 @@ def create_task_summary(
         else:
             return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={'message': 'The task already exists'})
     else:
-        summary = crud.get_summary(
+        db_summary = crud.get_summary(
             session=session,
             video_link=summary_request.video_link,
             size=summary_request.size,
             language=summary_request.language
         )
 
-        if summary:
+        if db_summary:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={'message': 'The summary is already in the DB'}

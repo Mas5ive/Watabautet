@@ -380,13 +380,18 @@ class TestCreateTaskSummary:
         task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is None
 
-    def test_create_when_task_is_in_cache_with_status_pending(
-        self, cache: Redis, client: Redis, user_token_headers: dict[str, str], db_video, cache_summary, task_queue
+    @pytest.mark.parametrize(
+        'task_status',
+        [states.PENDING, states.STARTED, states.RETRY, states.SUCCESS],
+    )
+    def test_create_when_task_is_in_cache_with_status_non_failed(
+        self, cache: Redis, client: Redis, user_token_headers: dict[str, str], db_video, cache_summary,
+        task_queue, task_status: str
     ) -> None:
         cache_summary(
             cache=cache,
             task_id=utils.TaskIdSummary.generate(**SUMMARY_PARAMS),
-            status=states.PENDING
+            status=task_status
         )
         request = client.post(
             self.API_ENDPOINT,
@@ -399,14 +404,19 @@ class TestCreateTaskSummary:
         message_data = t_utils.get_data_from_message(task_queue)
         assert message_data is None
 
-    def test_create_when_task_is_in_cache_with_status_success(
+    def test_create_when_task_is_in_cache_with_impossibletaskerror(
         self, cache: Redis, client: Redis, user_token_headers: dict[str, str], db_video, cache_summary, task_queue
     ) -> None:
         cache_summary(
             cache=cache,
             task_id=utils.TaskIdSummary.generate(**SUMMARY_PARAMS),
             status=states.SUCCESS,
-            result=COMMON_SUMMARY_ATTRIBUTES,
+            result={
+                'exc_type': 'ImpossibleTaskError',
+                'exc_message': ['Google API error'],
+                'exc_module': 'app.tasks'
+            },
+            traceback='Traceback (most recent call last): ... ImpossibleTaskError... ',
             date_done='2025-03-26T19:13:53.395702+00:00'
         )
         request = client.post(
@@ -416,7 +426,7 @@ class TestCreateTaskSummary:
         )
         assert request.status_code == status.HTTP_400_BAD_REQUEST
         response = request.json()
-        assert response['message'] == 'The summary is already in the cache'
+        assert response['message'] == 'The task already exists'
         message_data = t_utils.get_data_from_message(task_queue)
         assert message_data is None
 
@@ -433,6 +443,7 @@ class TestCreateTaskSummary:
                 'exc_message': [],
                 'exc_module': 'builtins'
             },
+            traceback='Traceback (most recent call last): ... ',
             date_done=t_utils.get_formatted_time_offset()
         )
         request = client.post(
@@ -460,6 +471,7 @@ class TestCreateTaskSummary:
                 'exc_message': [],
                 'exc_module': 'builtins'
             },
+            traceback='Traceback (most recent call last): ... ',
             date_done=t_utils.get_formatted_time_offset(offset=-settings.FAILURE_COOLDOWN_SEC)
         )
         request = client.post(
