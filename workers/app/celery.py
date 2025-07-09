@@ -2,6 +2,7 @@ import os
 
 from celery import Celery, Task
 from celery.utils.log import get_task_logger
+from google.api_core import exceptions as google_exceptions
 from requests.exceptions import RequestException
 from yt_dlp.utils import DownloadError
 
@@ -19,7 +20,13 @@ cache_url = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0'
 
 
 class CustomTask(Task):
-    autoretry_for = (DownloadError, RequestException)
+    autoretry_for = (
+        DownloadError,
+        RequestException,
+        google_exceptions.ResourceExhausted,
+        google_exceptions.ServiceUnavailable,
+        google_exceptions.DeadlineExceeded,
+    )
     retry_backoff = True
     max_retries = int(os.getenv('CELERY_TASK_MAX_RETRIES', 8))
     retry_backoff_max = int(os.getenv('CELERY_TASK_BACKOFF_MAX', 600))
