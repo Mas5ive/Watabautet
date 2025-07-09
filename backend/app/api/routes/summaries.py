@@ -14,7 +14,12 @@ from fastapi.responses import JSONResponse
 router = APIRouter(prefix="/summaries", tags=["summaries"])
 
 
-@router.get('/', response_model=SummaryResponse)
+@router.get('/', responses={
+    200: {'model': SummaryResponse},
+    202: {'model': Message},
+    422: {'model': Message},
+    503: {'model': Message},
+})
 def get_summary(
     current_user: CurrentUser,
     session: SessionDep,
@@ -30,10 +35,28 @@ def get_summary(
         language=request.language
     )
     task_data = celery.backend.get_task_meta(task_id_summary)
-
+    summary = None
     # If the length of task_data is <= 2, the task is not in the cache.
-    if len(task_data) > 2 and task_data['status'] == states.SUCCESS:
-        summary = SummaryResponse.model_validate(request, update=task_data['result'])
+    if len(task_data) > 2:
+        if task_data['status'] == states.SUCCESS:
+            summary = SummaryResponse.model_validate(request, update=task_data['result'])
+        elif task_data['status'] == states.FAILURE and 'ImpossibleTaskError' in task_data['traceback']:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content={'message': str(task_data['result'])}
+            )
+        elif task_data['status'] == states.FAILURE:
+            diff_curr_time = calc_diff_curr_time(task_data['date_done'])
+            sec_to_task_completion = settings.FAILURE_COOLDOWN_SEC - diff_curr_time
+
+            if sec_to_task_completion > 0:
+                return JSONResponse(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    headers={'Retry-After': f'{sec_to_task_completion}'},
+                    content={'message': 'Some service is not working properly or is busy. Try the request again later'}
+                )
+        else:
+            return JSONResponse(status_code=202, content={'message': 'Getting the summary is in progress'})
     else:
         summary = crud.get_summary(
             session=session,

@@ -50,7 +50,7 @@ class TestGetSummary:
         yield t_utils.create_item_in_cache
         cache.flushall()
 
-    def test_get_from_cache(
+    def test_get_when_task_is_in_cache_with_status_success(
             self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_summary
     ) -> None:
         cache_summary(
@@ -65,6 +65,82 @@ class TestGetSummary:
         response = request.json()
         assert response['text'] == COMMON_SUMMARY_ATTRIBUTES['text']
         assert response['video_link'] == SUMMARY_PARAMS['video_link']
+
+    def test_get_when_task_is_in_cache_with_impossibletaskerror(
+            self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_summary
+    ) -> None:
+        cache_summary(
+            cache=cache,
+            task_id=utils.TaskIdSummary.generate(**SUMMARY_PARAMS),
+            status=states.FAILURE,
+            result={
+                'exc_type': 'ImpossibleTaskError',
+                'exc_message': ['Google API error'],
+                'exc_module': 'app.tasks'
+            },
+            traceback='Traceback (most recent call last): ... ImpossibleTaskError... ',
+            date_done='2025-03-26T19:13:53.395702+00:00'
+        )
+        request = client.get(self.API_ENDPOINT, params=SUMMARY_PARAMS, headers=user_token_headers)
+        assert request.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        response = request.json()
+        assert response['message'] == 'Google API error'
+
+    def test_get_when_task_is_in_cache_with_status_failed(
+            self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_summary
+    ) -> None:
+        cache_summary(
+            cache=cache,
+            task_id=utils.TaskIdSummary.generate(**SUMMARY_PARAMS),
+            status=states.FAILURE,
+            result={
+                'exc_type': 'Exception',
+                'exc_message': [],
+                'exc_module': 'builtins'
+            },
+            traceback='Traceback (most recent call last): ...',
+            date_done=t_utils.get_formatted_time_offset()
+        )
+        request = client.get(self.API_ENDPOINT, headers=user_token_headers, params=SUMMARY_PARAMS)
+        assert request.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+        response = request.json()
+        assert response['message'] == 'Some service is not working properly or is busy. Try the request again later'
+        assert 'Retry-After' in request.headers
+
+    def test_get_when_task_is_in_cache_with_status_failed_but_cooled_down(
+        self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_summary
+    ) -> None:
+        cache_summary(
+            cache=cache,
+            task_id=utils.TaskIdSummary.generate(**SUMMARY_PARAMS),
+            status=states.FAILURE,
+            result={
+                'exc_type': 'Exception',
+                'exc_message': [],
+                'exc_module': 'builtins'
+            },
+            traceback='Traceback (most recent call last): ...',
+            date_done=t_utils.get_formatted_time_offset(offset=-settings.FAILURE_COOLDOWN_SEC)
+        )
+        request = client.get(self.API_ENDPOINT, params=SUMMARY_PARAMS, headers=user_token_headers)
+        assert request.status_code == status.HTTP_404_NOT_FOUND
+
+    @pytest.mark.parametrize(
+        'task_status',
+        [states.PENDING, states.STARTED, states.RETRY],
+    )
+    def test_get_when_task_is_in_cache_with_in_progress_status(
+            self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], cache_summary, task_status: str
+    ) -> None:
+        cache_summary(
+            cache=cache,
+            task_id=utils.TaskIdSummary.generate(**SUMMARY_PARAMS),
+            status=task_status,
+        )
+        request = client.get(self.API_ENDPOINT, params=SUMMARY_PARAMS, headers=user_token_headers)
+        assert request.status_code == status.HTTP_202_ACCEPTED
+        response = request.json()
+        assert response['message'] == 'Getting the summary is in progress'
 
     def test_get_from_db(
             self, client: TestClient, user_token_headers: dict[str, str], db_summary
