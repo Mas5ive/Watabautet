@@ -1,15 +1,17 @@
 [project]
 name = "workers"
 version = "0.1.0"
-description = ""
+description = """Celery workers performing tasks to obtain subtitles from YouTube and generate
+ summaries using an external LLM."""
 authors = [{ name = "Mas5ive", email = "empty@empty" }]
 requires-python = ">=3.13, <4.0"
 dependencies = [
-    "celery<6.0.0,>=5.4.0",
+    "celery>=5.4.0,<6.0.0",
     "google-generativeai>=0.8.5,<0.9.0",
     "redis>=5.2.1,<6.0.0",
     "yt-dlp>=2025.12.8",
 ]
 
 [dependency-groups]
-dev = ["debugpy<2.0.0,>=1.8.12", "pytest<9.0.0,>=8.3.4", "watchdog<7.0.0,>=6.0.0"]
+dev = ["debugpy<2.0.0,>=1.8.12", "watchdog<7.0.0,>=6.0.0"]
+test = ["pytest<9.0.0,>=8.3.4"]

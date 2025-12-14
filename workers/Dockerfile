@@ -10,17 +10,17 @@ ENV UV_LINK_MODE=copy
 ENV PATH="/workers/.venv/bin:$PATH"
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=workers/uv.lock,target=uv.lock \
     --mount=type=bind,source=workers/pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-dev
+    uv sync --locked --no-dev
 
-COPY ./workers/app ./app
+COPY ./workers/uv.lock ./workers/pyproject.toml /workers/
 COPY ./workers/scripts ./scripts
-COPY ./uv.lock ./workers/pyproject.toml /workers/
+COPY ./workers/app ./app
 
 
 
 FROM base AS dev
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen
+    uv sync --locked --group dev

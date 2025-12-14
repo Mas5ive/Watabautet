@@ -26,6 +26,7 @@ services:
       target: base
     env_file:
       - .env
+      - backend/.env
     restart: always
     command: bash /backend/scripts/run.sh
     depends_on:
@@ -47,6 +48,7 @@ services:
       target: base
     env_file:
       - .env
+      - workers/.env
     restart: always
     command: bash /workers/scripts/run.sh
     depends_on:

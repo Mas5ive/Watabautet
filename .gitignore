@@ -1,5 +1,6 @@
 .venv
 *.env
+*.code-workspace
 
 # Python-generated files
 __pycache__/
