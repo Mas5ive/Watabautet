@@ -31,7 +31,7 @@ services:
     command: bash /backend/scripts/run.sh
     depends_on:
       cache:
-        condition: service_started
+        condition: service_healthy
       broker:
         condition: service_healthy
       db:
@@ -53,7 +53,7 @@ services:
     command: bash /workers/scripts/run.sh
     depends_on:
       cache:
-        condition: service_started
+        condition: service_healthy
       broker:
         condition: service_healthy
     networks: 
@@ -71,6 +71,12 @@ services:
     restart: always
     entrypoint: ["redis-server"]
     command: ["--requirepass", "$REDIS_PASSWORD"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$REDIS_PASSWORD", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     networks:
       - default
 
