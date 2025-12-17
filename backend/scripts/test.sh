@@ -3,7 +3,7 @@
 set -e
 set -x
 
-bash scripts/migration.sh
+alembic upgrade head
 
 if [ "$DEBUG" = "true" ]; then
   echo "Debugger enabled. Waiting for client to connect to 0.0.0.0:5680..."

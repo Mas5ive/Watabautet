@@ -3,6 +3,6 @@
 set -e
 set -x
 
-bash scripts/migration.sh
+alembic upgrade head
 
 exec uvicorn app.main:app --workers 4
