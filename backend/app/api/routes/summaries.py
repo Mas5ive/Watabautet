@@ -1,15 +1,15 @@
 from typing import Annotated, Any
 
+from celery import states
+from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import JSONResponse
+
 from app import crud
 from app.api import utils
 from app.api.deps import CeleryDep, CurrentUser, SessionDep
 from app.core.config import settings
-from app.models import (Message, Summary, SummaryRequest, SummaryResponse,
-                        Video, VideoRequest)
+from app.models import Message, Summary, SummaryRequest, SummaryResponse, Video
 from app.utils import calc_diff_curr_time
-from celery import states
-from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/summaries", tags=["summaries"])
 
@@ -79,17 +79,16 @@ def create_task_summary(
     current_user: CurrentUser,
     session: SessionDep,
     celery: CeleryDep,
-    summary_request: SummaryRequest,
-    video_request: VideoRequest,
+    request: SummaryRequest,
 ) -> JSONResponse:
     """
     Creates a background task to process summary if no existing task is currently in progress or recently failed.
     There must be pre-existing data about the video on which the summarization is based.
     """
     task_id_summary = utils.TaskIdSummary.generate(
-        video_link=summary_request.video_link,
-        size=summary_request.size,
-        language=summary_request.language
+        video_link=request.video_link,
+        size=request.size,
+        language=request.language
     )
     task_data_summary = celery.backend.get_task_meta(task_id_summary)
 
@@ -115,9 +114,9 @@ def create_task_summary(
     else:
         db_summary = crud.get_summary(
             session=session,
-            video_link=summary_request.video_link,
-            size=summary_request.size,
-            language=summary_request.language
+            video_link=request.video_link,
+            size=request.size,
+            language=request.language
         )
 
         if db_summary:
@@ -126,14 +125,14 @@ def create_task_summary(
                 content={'message': 'The summary is already in the DB'}
             )
 
-    task_id_video = utils.TaskIdVideo.generate(link=video_request.link)
+    task_id_video = utils.TaskIdVideo.generate(link=request.video_link)
     task_data_video = celery.backend.get_task_meta(task_id_video)
 
     # If the length of task_data is <= 2, the task is not in the cache.
     if len(task_data_video) > 2 and task_data_video['status'] == states.SUCCESS:
-        video = Video.model_validate(video_request, update=task_data_video['result'])
+        video = Video.model_validate({**task_data_video['result'], 'link': request.video_link})
     else:
-        video = session.get(Video, video_request.link)
+        video = session.get(Video, request.video_link)
 
     if not video:
         return JSONResponse(
@@ -143,7 +142,7 @@ def create_task_summary(
 
     celery.send_task(
         'app.tasks.make_summary',
-        args=[summary_request.model_dump(exclude={'video_link'}), video.model_dump()],
+        args=[request.model_dump(exclude={'video_link'}), video.model_dump()],
         task_id=task_id_summary
     )
     celery.backend.store_result(task_id=task_id_summary, result=None, state=states.PENDING)
