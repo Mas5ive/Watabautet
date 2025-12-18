@@ -82,7 +82,7 @@ class TestGetSummary:
             date_done='2025-03-26T19:13:53.395702+00:00'
         )
         request = client.get(self.API_ENDPOINT, params=SUMMARY_PARAMS, headers=user_token_headers)
-        assert request.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert request.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         response = request.json()
         assert response['message'] == 'Google API error'
 

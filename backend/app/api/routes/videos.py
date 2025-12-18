@@ -37,7 +37,7 @@ def get_video(
             video = VideoResponse.model_validate(request, update=task_data['result'])
         elif task_data['status'] == states.FAILURE and 'ImpossibleTaskError' in task_data['traceback']:
             return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 content={'message': str(task_data['result'])}
             )
         elif task_data['status'] == states.FAILURE:
