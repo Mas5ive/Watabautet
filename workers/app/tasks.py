@@ -1,19 +1,14 @@
 import os
 
-import google.generativeai as genai
 import requests
 import yt_dlp
+from google.genai import Client, errors, types
+
 from app import utils
 from app.celery import app, logger
-from google.api_core import exceptions as google_exceptions
-
-
-class ImpossibleTaskError(Exception):
-    """
-    Custom exception raised when a task encounters an impossible state or
-    a condition that prevents it from completing successfully, even after retries.
-    """
-    pass
+from app.exceptions import (ImpossibleTaskError,
+                            non_retriable_google_api_errors,
+                            retriable_google_api_errors)
 
 
 @app.task
@@ -95,10 +90,6 @@ def make_summary(summary: dict, video: dict) -> dict:
     Returns:
         dict: A dictionary containing the video link, summary size, language, and the generated summary text.
     """
-    genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-    model = genai.GenerativeModel(os.environ["GOOGLE_LLM"])
-    request_timeout = int(os.getenv('GOOGLE_API_TIMEOUT_SEC', 120))
-
     size_instructions = {
         'small': ('Create a very brief summary (TL;DR). It should be 1-2 sentences long and reflect the most important '
                   'point or key takeaway from the video.'),
@@ -133,22 +124,25 @@ def make_summary(summary: dict, video: dict) -> dict:
         {video['text']}
         ---
     """
-    try:
-        response = model.generate_content(prompt, request_options={'timeout': request_timeout})
-        text = response.text
-    except (
-        google_exceptions.ResourceExhausted,  # [429] # You've exceeded the rate limit.
-        google_exceptions.ServiceUnavailable,  # [503] # The service may be temporarily overloaded or down.
-        google_exceptions.DeadlineExceeded,  # [504] Your prompt (or context) is too large to be processed in time.
-    ) as e:
-        logger.warning(f'Google API error for video {video['link']}. Retrying... Error: {e}')
-        raise
-    except google_exceptions.InternalServerError as e:  # [500] Your input context is too long.
-        raise ImpossibleTaskError(f'The video {video['link']} is too long to be summarized. Reason: {e}')
-    except ValueError as e:
-        raise ImpossibleTaskError(
-            f'Content generation from video {video['link']} failed, likely due to safety filters. Reason: {e}'
-        )
+
+    request_timeout = int(os.getenv('GOOGLE_API_TIMEOUT_SEC', 120))
+    with Client(http_options=types.HttpOptions(timeout=request_timeout * 1000)) as client:
+        try:
+            response = client.models.generate_content(model=os.environ["GOOGLE_LLM"], contents=prompt)
+            text = response.text
+        except errors.APIError as e:
+            if e.code in retriable_google_api_errors:
+                logger.warning(f'Google API error for video {video['link']}. Retrying... Error: {e}')
+                raise retriable_google_api_errors[e.code](e)
+            elif e.code in non_retriable_google_api_errors:
+                raise ImpossibleTaskError(f'Google API error for video {video['link']}. Error: {e}')
+            else:
+                logger.error(f'Unexpected Google API error for video {video['link']}. Error: {e}')
+                raise
+        except ValueError as e:
+            raise ImpossibleTaskError(
+                f'Content generation from video {video['link']} failed, likely due to safety filters. Reason: {e}'
+            )
 
     return {
         'video_link': video['link'],
