@@ -34,8 +34,6 @@ class VideoView(VideoRequest):
 
 class VideoResponse(VideoRequest):
     category: str | None = None
-    description: str | None = None
-    text: str | None = None
     title: str | None = None
 
 
