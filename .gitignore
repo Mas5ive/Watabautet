@@ -1,11 +1,11 @@
 .venv
 *.env
+dist/
 *.code-workspace
 
 # Python-generated files
 __pycache__/
 *.py[oc]
 build/
-dist/
 wheels/
 *.egg-info
