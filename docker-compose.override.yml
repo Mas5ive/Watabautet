@@ -45,6 +45,23 @@ services:
           path: ./workers/pyproject.toml
           target: /workers/pyproject.toml
     
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - 3000:3000
+    restart: no
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend/src
+          target: /frontend/src
+          
+        - action: rebuild
+          path: ./frontend/package.json
+          target: /frontend/package.json
 
   cache:
     ports:

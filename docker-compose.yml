@@ -59,6 +59,18 @@ services:
     networks: 
       - default
     
+  frontend:
+    container_name: frontend
+    hostname: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: prod
+    restart: always
+    ports:
+      - 80:80
+    networks:
+      - default
 
   cache:
     container_name: redis
