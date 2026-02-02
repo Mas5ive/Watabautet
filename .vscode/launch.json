@@ -52,7 +52,7 @@
     ],
     "compounds": [
         {
-            "name": "All services",
+            "name": "All python services",
             "configurations": [
                 "Backend",
                 "Workers"
