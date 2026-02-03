@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { mockLogin } from '../services/mockBackend';
-import { registerUser } from '../services/api';
+import { loginUser, registerUser } from '../services/api';
 import { AlertTriangle, User as UserIcon, Lock } from 'lucide-react';
 
 interface AuthModalProps {
@@ -25,7 +24,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onSuccess, on
     try {
       let user: User;
       if (mode === 'login') {
-        user = await mockLogin(username);
+        user = await loginUser(username, password);
       } else {
         user = await registerUser(username, password);
       }
@@ -71,26 +70,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onSuccess, on
             </div>
           </div>
 
-          {mode === 'register' && (
-            <div className="relative group">
-              <label className="block font-marker mb-2 text-xl">PASSWORD</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-black" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-gray-100 border-b-4 border-gray-400 focus:border-black outline-none py-3 pl-12 pr-4 font-terminal text-2xl transition-colors"
-                  placeholder="ENTER PASSWORD..."
-                  minLength={8}
-                  required
-                />
-              </div>
+          <div className="relative group">
+            <label className="block font-marker mb-2 text-xl">PASSWORD</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-black" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-gray-100 border-b-4 border-gray-400 focus:border-black outline-none py-3 pl-12 pr-4 font-terminal text-2xl transition-colors"
+                placeholder="ENTER PASSWORD..."
+                minLength={8}
+                required
+              />
+            </div>
+            {mode === 'register' && (
               <p className="text-sm text-gray-600 mt-1 font-terminal">
                 Minimum 8 characters required
               </p>
-            </div>
-          )}
+            )}
+          </div>
 
           <button
             type="submit"

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthState, ModalType, SummaryResult, SummarySize, Language } from './types';
 import { mockExtractSummary } from './services/mockBackend';
+import { checkAuthStatus } from './services/api';
 import { Mascot } from './components/Mascot';
 import { AmpSlider } from './components/AmpSlider';
 import { ActionBurst } from './components/ActionBurst';
@@ -22,6 +23,23 @@ const App: React.FC = () => {
 
     // Router State
     const [view, setView] = useState<'home' | 'library'>('home');
+
+    // Check authentication status on app initialization
+    useEffect(() => {
+        const restoreAuthState = async () => {
+            try {
+                const user = await checkAuthStatus();
+                if (user) {
+                    setAuth({ isAuthenticated: true, user });
+                }
+            } catch (error) {
+                // Authentication check failed, user remains logged out
+                console.log('Authentication check failed:', error);
+            }
+        };
+
+        restoreAuthState();
+    }, []);
 
     const handleAuthSuccess = (user: any) => {
         setAuth({ isAuthenticated: true, user });
