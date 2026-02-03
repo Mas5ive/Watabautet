@@ -8,6 +8,7 @@ export type Language = 'EN' | 'RU';
 
 export interface User {
   username: string;
+  id?: string;
 }
 
 export interface SummaryResult {

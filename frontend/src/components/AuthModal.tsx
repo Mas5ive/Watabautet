@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { mockLogin, mockRegister } from '../services/mockBackend';
-import { AlertTriangle, User as UserIcon } from 'lucide-react';
+import { mockLogin } from '../services/mockBackend';
+import { registerUser } from '../services/api';
+import { AlertTriangle, User as UserIcon, Lock } from 'lucide-react';
 
 interface AuthModalProps {
   initialMode: 'login' | 'register';
@@ -12,6 +13,7 @@ interface AuthModalProps {
 export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onSuccess, onClose }) => {
   const [mode, setMode] = useState(initialMode);
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,7 +27,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onSuccess, on
       if (mode === 'login') {
         user = await mockLogin(username);
       } else {
-        user = await mockRegister(username);
+        user = await registerUser(username, password);
       }
       onSuccess(user);
     } catch (err: any) {
@@ -69,23 +71,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onSuccess, on
             </div>
           </div>
 
+          {mode === 'register' && (
+            <div className="relative group">
+              <label className="block font-marker mb-2 text-xl">PASSWORD</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-black" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-gray-100 border-b-4 border-gray-400 focus:border-black outline-none py-3 pl-12 pr-4 font-terminal text-2xl transition-colors"
+                  placeholder="ENTER PASSWORD..."
+                  minLength={8}
+                  required
+                />
+              </div>
+              <p className="text-sm text-gray-600 mt-1 font-terminal">
+                Minimum 8 characters required
+              </p>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={isLoading}
             className="w-full bg-black text-yellow-400 font-marker text-2xl py-4 hover:bg-yellow-400 hover:text-black transition-colors border-4 border-transparent hover:border-black"
           >
-            {isLoading ? 'ACCESSING...' : (mode === 'login' ? 'ENTER SYSTEM' : 'INITIATE')}
+            {isLoading ? 'ACCESSING...' : (mode === 'login' ? 'ENTER SYSTEM' : 'CREATE ACCOUNT')}
           </button>
         </form>
 
         <div className="mt-6 text-center font-terminal text-lg">
           {mode === 'login' ? (
             <>
-              New Unit? <button onClick={() => setMode('register')} className="underline decoration-wavy decoration-purple-600 text-purple-800 font-bold">Register Protocol</button>
+              New Unit? <button onClick={() => { setMode('register'); setPassword(''); }} className="underline decoration-wavy decoration-purple-600 text-purple-800 font-bold">Register Protocol</button>
             </>
           ) : (
             <>
-              Existing Unit? <button onClick={() => setMode('login')} className="underline decoration-wavy decoration-purple-600 text-purple-800 font-bold">Login Protocol</button>
+              Existing Unit? <button onClick={() => { setMode('login'); setPassword(''); }} className="underline decoration-wavy decoration-purple-600 text-purple-800 font-bold">Login Protocol</button>
             </>
           )}
         </div>
