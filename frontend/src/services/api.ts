@@ -124,3 +124,7 @@ export const checkAuthStatus = async (): Promise<User | null> => {
     return null;
   }
 };
+
+export const logoutUser = async (): Promise<void> => {
+  localStorage.removeItem('access_token');
+};

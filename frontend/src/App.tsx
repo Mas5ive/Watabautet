@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthState, ModalType, SummaryResult, SummarySize, Language } from './types';
 import { mockExtractSummary } from './services/mockBackend';
-import { checkAuthStatus } from './services/api';
+import { checkAuthStatus, logoutUser } from './services/api';
 import { Mascot } from './components/Mascot';
 import { AmpSlider } from './components/AmpSlider';
 import { ActionBurst } from './components/ActionBurst';
@@ -46,7 +46,11 @@ const App: React.FC = () => {
         setModal('none');
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        // Clear the authentication token
+        await logoutUser();
+
+        // Clear local state
         setAuth({ isAuthenticated: false, user: null });
         setResult(null);
         setUrl('');
