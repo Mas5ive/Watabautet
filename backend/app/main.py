@@ -4,6 +4,7 @@ from app.api.main import api_router
 from app.core.config import settings
 from celery import Celery
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
 
@@ -25,5 +26,18 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # Frontend development server
+        "http://frontend:3000",   # Frontend in docker network
+        "http://localhost:80",    # Frontend production
+        "http://frontend",        # Frontend service name
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
