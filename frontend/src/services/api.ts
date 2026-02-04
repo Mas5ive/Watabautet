@@ -1,4 +1,4 @@
-import { User, SummaryResult, SummarySize, Language } from '../types';
+import { User, SummaryResult, SummarySize, Language, LibraryItem, LibraryEntry } from '../types';
 
 // API base URL - will be proxied through Vite during development
 // Backend API is mounted at /api/v1
@@ -200,16 +200,16 @@ export const extractSummary = async (
 
     if (response.status === 200) {
       const summaryData = await response.json();
-      return formatSummaryResponse(summaryData, videoData.title, size, language);
+      return formatSummaryResponse(summaryData, videoData.title, size, language, videoId);
     } else if (response.status === 202) {
       // Summary generation in progress
       const summaryData = await pollSummaryStatus(videoId, backendSize, language, headers);
-      return formatSummaryResponse(summaryData, videoData.title, size, language);
+      return formatSummaryResponse(summaryData, videoData.title, size, language, videoId);
     } else if (response.status === 404) {
       // Summary not found, start processing
       await startSummaryProcessing(videoId, backendSize, language, headers);
       const summaryData = await pollSummaryStatus(videoId, backendSize, language, headers);
-      return formatSummaryResponse(summaryData, videoData.title, size, language);
+      return formatSummaryResponse(summaryData, videoData.title, size, language, videoId);
     } else {
       await handleResponse(response); // Will throw error
     }
@@ -273,7 +273,7 @@ const startSummaryProcessing = async (videoId: string, size: string, language: s
   }
 };
 
-const formatSummaryResponse = (data: any, title: string, size: SummarySize, language: Language): SummaryResult => {
+const formatSummaryResponse = (data: any, title: string, size: SummarySize, language: Language, videoId?: string): SummaryResult => {
   // Backend returns text as a single string, frontend expects string[]
   const content = data.text ? data.text.split('\n').filter((p: string) => p.trim() !== '') : [];
   return {
@@ -281,5 +281,106 @@ const formatSummaryResponse = (data: any, title: string, size: SummarySize, lang
     content,
     size,
     language,
+    videoId,
   };
+};
+
+// --- Library Functions ---
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    throw new Error('AUTHENTICATION REQUIRED. LOG IN TO PROCEED.');
+  }
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+};
+
+export const saveToLibrary = async (summary: SummaryResult, videoId: string): Promise<void> => {
+  const headers = getAuthHeaders();
+  const backendSize = SIZE_MAPPING[summary.size];
+
+  // 1. Save video to database
+  const videoResponse = await fetch(`${API_BASE_URL}/videos/store`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ link: videoId }),
+  });
+  
+  // Ignore if video already exists (200) or handle other errors
+  if (!videoResponse.ok && videoResponse.status !== 200) {
+    await handleResponse(videoResponse);
+  }
+
+  // 2. Save summary to database
+  const summaryResponse = await fetch(`${API_BASE_URL}/summaries/store`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      video_link: videoId,
+      size: backendSize,
+      language: summary.language,
+    }),
+  });
+
+  // Ignore if summary already exists (200) or handle other errors
+  if (!summaryResponse.ok && summaryResponse.status !== 200) {
+    await handleResponse(summaryResponse);
+  }
+
+  // 3. Link summary to user
+  const userResponse = await fetch(`${API_BASE_URL}/users/me/summaries`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      video_link: videoId,
+      size: backendSize,
+      language: summary.language,
+    }),
+  });
+
+  await handleResponse(userResponse);
+};
+
+export const getLibrary = async (): Promise<LibraryItem[]> => {
+  const headers = getAuthHeaders();
+
+  const response = await fetch(`${API_BASE_URL}/users/me/library`, { headers });
+  const libraryData = await handleResponse<any>(response);
+
+  // Transform backend data to frontend format
+  return libraryData.videos.map((video: any) => {
+    const entries: LibraryEntry[] = video.summaries.map((summary: any) => ({
+      size: reverseSizeMapping[summary.size],
+      language: summary.language as Language,
+      content: summary.text ? summary.text.split('\n').filter((p: string) => p.trim() !== '') : [],
+    }));
+
+    return {
+      id: `lib-${video.link}`,
+      videoId: video.link,
+      title: video.title,
+      entries,
+    };
+  });
+};
+
+export const deleteSummary = async (videoId: string, size: SummarySize, language: Language): Promise<void> => {
+  const headers = getAuthHeaders();
+  const backendSize = SIZE_MAPPING[size];
+
+  const response = await fetch(`${API_BASE_URL}/users/me/summaries?video_link=${videoId}&size=${backendSize}&language=${language}`, {
+    method: 'DELETE',
+    headers,
+  });
+
+  await handleResponse(response);
+};
+
+const reverseSizeMapping: Record<string, SummarySize> = {
+  'small': SummarySize.SHORT,
+  'medium': SummarySize.MEDIUM,
+  'large': SummarySize.LONG,
 };

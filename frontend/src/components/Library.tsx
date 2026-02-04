@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { LibraryItem, SummarySize, LibraryEntry } from '../types';
-import { mockGetLibrary, mockDeleteSummary } from '../services/mockBackend';
+import { getLibrary, deleteSummary } from '../services/api';
 import { Mascot } from './Mascot';
 import { ResultPanel } from './ResultPanel';
 import { ChevronDown, ChevronUp, Loader2, PlayCircle } from 'lucide-react';
@@ -12,6 +12,7 @@ export const Library: React.FC = () => {
     const [items, setItems] = useState<LibraryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     // State for viewing a specific summary modal
     const [selectedSummary, setSelectedSummary] = useState<{ item: LibraryItem, entry: LibraryEntry } | null>(null);
@@ -22,10 +23,12 @@ export const Library: React.FC = () => {
 
     const loadData = async () => {
         setLoading(true);
+        setError(null);
         try {
-            const data = await mockGetLibrary();
+            const data = await getLibrary();
             setItems(data);
-        } catch (e) {
+        } catch (e: any) {
+            setError(e.message || 'Failed to load library');
             console.error(e);
         } finally {
             setLoading(false);
@@ -44,14 +47,15 @@ export const Library: React.FC = () => {
     const handleDelete = async () => {
         if (!selectedSummary) return;
 
-        // Call mock delete
-        await mockDeleteSummary(selectedSummary.item.id);
-
-        // Update local state to remove item
-        setItems(prev => prev.filter(i => i.id !== selectedSummary.item.id));
-
-        // Close modal
-        setSelectedSummary(null);
+        try {
+            await deleteSummary(selectedSummary.item.videoId, selectedSummary.entry.size, selectedSummary.entry.language);
+            // Update local state to remove item
+            setItems(prev => prev.filter(i => i.id !== selectedSummary.item.id));
+            // Close modal
+            setSelectedSummary(null);
+        } catch (e: any) {
+            setError(e.message || 'Failed to delete summary');
+        }
     };
 
     // Helper to determine button color based on Size
@@ -78,6 +82,13 @@ export const Library: React.FC = () => {
                         SAVED DATA [{items.length}]
                     </div>
                 </div>
+
+                {/* Error Message */}
+                {error && (
+                    <div className="mb-4 p-4 bg-red-100 border-4 border-red-500 text-red-700 font-terminal text-lg">
+                        ERROR: {error}
+                    </div>
+                )}
 
                 {/* Scrollable List Container - Takes remaining space */}
                 <div className="flex-1 w-full md:overflow-y-auto md:pr-4 custom-scrollbar">

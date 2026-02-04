@@ -16,6 +16,7 @@ export interface SummaryResult {
   content: string[];
   size: SummarySize;
   language: Language;
+  videoId?: string;
 }
 
 export interface LibraryEntry {

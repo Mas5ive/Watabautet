@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SummaryResult } from '../types';
-import { mockSaveToLibrary } from '../services/mockBackend';
+import { saveToLibrary } from '../services/api';
 import { Save, XCircle, Terminal, Trash2 } from 'lucide-react';
 
 interface ResultPanelProps {
@@ -13,12 +13,25 @@ interface ResultPanelProps {
 export const ResultPanel: React.FC<ResultPanelProps> = ({ result, onClose, mode = 'preview', onDelete }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSave = async () => {
+    if (!result.videoId) {
+      setError('Video ID not available. Cannot save to library.');
+      return;
+    }
+    
     setIsProcessing(true);
-    await mockSaveToLibrary(result);
-    setSaved(true);
-    setIsProcessing(false);
+    setError(null);
+    
+    try {
+      await saveToLibrary(result, result.videoId);
+      setSaved(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save to library');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -59,6 +72,13 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({ result, onClose, mode 
             ))}
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="px-8 py-2 bg-red-100 border-t-4 border-red-500 text-red-700 font-terminal text-lg">
+            ERROR: {error}
+          </div>
+        )}
 
         {/* Footer Actions */}
         <div className="p-6 bg-white border-t-4 border-black flex justify-between items-center">
