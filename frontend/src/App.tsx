@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthState, ModalType, SummaryResult, SummarySize, Language } from './types';
-import { mockExtractSummary } from './services/mockBackend';
-import { checkAuthStatus, logoutUser } from './services/api';
+import { checkAuthStatus, logoutUser, extractSummary } from './services/api';
 import { Mascot } from './components/Mascot';
 import { AmpSlider } from './components/AmpSlider';
 import { ActionBurst } from './components/ActionBurst';
@@ -75,7 +74,7 @@ const App: React.FC = () => {
         // 3. Process
         setIsLoading(true);
         try {
-            const data = await mockExtractSummary(url, size, language);
+            const data = await extractSummary(url, size, language);
             setResult(data);
             setModal('result');
         } catch (err: any) {
