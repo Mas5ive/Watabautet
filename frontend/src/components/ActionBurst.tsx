@@ -35,9 +35,6 @@ export const ActionBurst: React.FC<ActionBurstProps> = ({ onClick, isLoading, te
         <span className={`${isLoading ? 'animate-bounce' : ''} z-10 relative`}>
           {isLoading ? 'PROCESSING...' : text}
         </span>
-
-        {/* Inner cracks/lines */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cracked-concrete.png')] opacity-20 mix-blend-multiply"></div>
       </button>
     </div>
   );
