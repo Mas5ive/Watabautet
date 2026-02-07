@@ -61,19 +61,18 @@ export const loginUser = async (username: string, password: string): Promise<Use
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
+    credentials: 'include', // Send/receive cookies
     body: formData.toString(),
   });
 
-  const tokenData: LoginResponse = await handleResponse<LoginResponse>(response);
+  await handleResponse<LoginResponse>(response);
 
-  // Store the token for future requests
-  localStorage.setItem('access_token', tokenData.access_token);
+  // Set the auth flag before making the user info request
+  setAuthCookieFlag();
 
-  // Get user info
+  // Get user info - token is now in httpOnly cookie
   const userResponse = await fetch(`${API_BASE_URL}/users/me`, {
-    headers: {
-      'Authorization': `Bearer ${tokenData.access_token}`,
-    },
+    credentials: 'include', // Send cookies
   });
 
   const userData: UserResponse = await handleResponse<UserResponse>(userResponse);
@@ -85,21 +84,12 @@ export const loginUser = async (username: string, password: string): Promise<Use
 };
 
 export const getCurrentUser = async (): Promise<User> => {
-  const token = localStorage.getItem('access_token');
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
-
   const response = await fetch(`${API_BASE_URL}/users/me`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
+    credentials: 'include', // Send cookies
   });
 
   if (!response.ok) {
-    // Token is invalid or expired
-    localStorage.removeItem('access_token');
-    throw new Error('Invalid or expired token');
+    throw new Error('Not authenticated');
   }
 
   const userData: UserResponse = await handleResponse<UserResponse>(response);
@@ -110,25 +100,64 @@ export const getCurrentUser = async (): Promise<User> => {
   };
 };
 
-export const checkAuthStatus = async (): Promise<User | null> => {
-  try {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      return null;
-    }
+// Cookie name for authentication (must match backend config)
+const AUTH_COOKIE_NAME = 'access_token';
 
-    // Try to get current user info
+/**
+ * Check if the auth cookie exists.
+ * This is a lightweight check that doesn't require an API call.
+ */
+const hasAuthCookie = (): boolean => {
+  // Check if the cookie exists by trying to read it
+  // document.cookie only shows cookies without HttpOnly flag, but we can check by setting a test cookie
+  // Since access_token is httpOnly, we need a different approach
+  
+  // Alternative: Use a non-httpOnly cookie as a flag
+  // For now, we'll use localStorage as a lightweight pre-check
+  return localStorage.getItem('auth_present') === 'true';
+};
+
+/**
+ * Set the auth cookie flag in localStorage.
+ * Call this after successful login.
+ */
+export const setAuthCookieFlag = (): void => {
+  localStorage.setItem('auth_present', 'true');
+};
+
+/**
+ * Clear the auth cookie flag in localStorage.
+ * Call this after logout.
+ */
+export const clearAuthCookieFlag = (): void => {
+  localStorage.removeItem('auth_present');
+};
+
+export const checkAuthStatus = async (): Promise<User | null> => {
+  // Skip API call if we know there's no auth cookie
+  // This avoids unnecessary 401 requests on the home page
+  if (!hasAuthCookie()) {
+    return null;
+  }
+  
+  try {
     const user = await getCurrentUser();
     return user;
   } catch (error) {
-    // Token is invalid or expired, remove it
-    localStorage.removeItem('access_token');
+    // If the API call fails (e.g., expired token), clear the flag
+    clearAuthCookieFlag();
     return null;
   }
 };
 
 export const logoutUser = async (): Promise<void> => {
-  localStorage.removeItem('access_token');
+  // Clear the auth flag first for immediate UI update
+  clearAuthCookieFlag();
+  
+  await fetch(`${API_BASE_URL}/logout`, {
+    method: 'POST',
+    credentials: 'include', // Send cookies to clear them
+  });
 };
 
 /**
@@ -162,21 +191,18 @@ export const extractSummary = async (
 ): Promise<SummaryResult> => {
   const videoId = extractVideoId(url);
   const backendSize = SIZE_MAPPING[size];
-  const token = localStorage.getItem('access_token');
-
-  if (!token) {
-    throw new Error('AUTHENTICATION REQUIRED. LOG IN TO PROCEED.');
-  }
 
   const headers = {
-    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
 
   // 1. Ensure Video Data exists
   let videoData: any = null;
   try {
-    const response = await fetch(`${API_BASE_URL}/videos/?link=${videoId}`, { headers });
+    const response = await fetch(`${API_BASE_URL}/videos/?link=${videoId}`, {
+      headers,
+      credentials: 'include', // Send cookies
+    });
     if (response.status === 200) {
       videoData = await response.json();
     } else if (response.status === 202) {
@@ -196,7 +222,10 @@ export const extractSummary = async (
   // 2. Ensure Summary exists
   try {
     const summaryUrl = `${API_BASE_URL}/summaries/?video_link=${videoId}&size=${backendSize}&language=${language}`;
-    const response = await fetch(summaryUrl, { headers });
+    const response = await fetch(summaryUrl, {
+      headers,
+      credentials: 'include', // Send cookies
+    });
 
     if (response.status === 200) {
       const summaryData = await response.json();
@@ -224,7 +253,10 @@ const pollVideoStatus = async (videoId: string, headers: any): Promise<any> => {
   const maxAttempts = 60; // 2 minutes with 2s delay
   for (let i = 0; i < maxAttempts; i++) {
     await delay(2000);
-    const response = await fetch(`${API_BASE_URL}/videos/?link=${videoId}`, { headers });
+    const response = await fetch(`${API_BASE_URL}/videos/?link=${videoId}`, {
+      headers,
+      credentials: 'include', // Send cookies
+    });
     if (response.status === 200) {
       return response.json();
     }
@@ -239,6 +271,7 @@ const startVideoProcessing = async (videoId: string, headers: any) => {
   const response = await fetch(`${API_BASE_URL}/videos/process`, {
     method: 'POST',
     headers,
+    credentials: 'include', // Send cookies
     body: JSON.stringify({ link: videoId }),
   });
   if (response.status !== 202) {
@@ -251,7 +284,10 @@ const pollSummaryStatus = async (videoId: string, size: string, language: string
   const summaryUrl = `${API_BASE_URL}/summaries/?video_link=${videoId}&size=${size}&language=${language}`;
   for (let i = 0; i < maxAttempts; i++) {
     await delay(2000);
-    const response = await fetch(summaryUrl, { headers });
+    const response = await fetch(summaryUrl, {
+      headers,
+      credentials: 'include', // Send cookies
+    });
     if (response.status === 200) {
       return response.json();
     }
@@ -266,6 +302,7 @@ const startSummaryProcessing = async (videoId: string, size: string, language: s
   const response = await fetch(`${API_BASE_URL}/summaries/process`, {
     method: 'POST',
     headers,
+    credentials: 'include', // Send cookies
     body: JSON.stringify({ video_link: videoId, size, language }),
   });
   if (response.status !== 202) {
@@ -288,12 +325,7 @@ const formatSummaryResponse = (data: any, title: string, size: SummarySize, lang
 // --- Library Functions ---
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('access_token');
-  if (!token) {
-    throw new Error('AUTHENTICATION REQUIRED. LOG IN TO PROCEED.');
-  }
   return {
-    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
 };
@@ -306,9 +338,10 @@ export const saveToLibrary = async (summary: SummaryResult, videoId: string): Pr
   const videoResponse = await fetch(`${API_BASE_URL}/videos/store`, {
     method: 'POST',
     headers,
+    credentials: 'include', // Send cookies
     body: JSON.stringify({ link: videoId }),
   });
-  
+
   // Ignore if video already exists (200) or handle other errors
   if (!videoResponse.ok && videoResponse.status !== 200) {
     await handleResponse(videoResponse);
@@ -318,6 +351,7 @@ export const saveToLibrary = async (summary: SummaryResult, videoId: string): Pr
   const summaryResponse = await fetch(`${API_BASE_URL}/summaries/store`, {
     method: 'POST',
     headers,
+    credentials: 'include', // Send cookies
     body: JSON.stringify({
       video_link: videoId,
       size: backendSize,
@@ -334,6 +368,7 @@ export const saveToLibrary = async (summary: SummaryResult, videoId: string): Pr
   const userResponse = await fetch(`${API_BASE_URL}/users/me/summaries`, {
     method: 'POST',
     headers,
+    credentials: 'include', // Send cookies
     body: JSON.stringify({
       video_link: videoId,
       size: backendSize,
@@ -347,7 +382,10 @@ export const saveToLibrary = async (summary: SummaryResult, videoId: string): Pr
 export const getLibrary = async (): Promise<LibraryItem[]> => {
   const headers = getAuthHeaders();
 
-  const response = await fetch(`${API_BASE_URL}/users/me/library`, { headers });
+  const response = await fetch(`${API_BASE_URL}/users/me/library`, {
+    headers,
+    credentials: 'include', // Send cookies
+  });
   const libraryData = await handleResponse<any>(response);
 
   // Transform backend data to frontend format
@@ -374,6 +412,7 @@ export const deleteSummary = async (videoId: string, size: SummarySize, language
   const response = await fetch(`${API_BASE_URL}/users/me/summaries?video_link=${videoId}&size=${backendSize}&language=${language}`, {
     method: 'DELETE',
     headers,
+    credentials: 'include', // Send cookies
   });
 
   await handleResponse(response);
