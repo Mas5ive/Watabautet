@@ -2,7 +2,7 @@
 
 ## Description
 
-The application provides users with the ability to extract summarised content from YouTube videos. To generate the summary, a machine learning model, Gemini, is used, which is accessed via the API. The main use of the app is to speed up information retrieval from long videos, with the ability to save and organise the extracted summaries for future use.
+Watabautet is a web application that provides users with the ability to extract summarised content from YouTube videos. It features a user-friendly frontend interface built with React and TypeScript. To generate the summary, a machine learning model, Gemini, is used, which is accessed via the API. The main use of the app is to speed up information retrieval from long videos, with the ability to save and organise the extracted summaries for future use.
 
 ### Available features
 
@@ -14,14 +14,26 @@ The application provides users with the ability to extract summarised content fr
 
 >**The project deliberately uses overengineering!**
 
-Core technologies:
+Technologies:
+
+Backend:
 
 - python 3.13
-- docker
-- uv
 - fastapi
 - postgres
 - celery
+
+Frontend:
+
+- react
+- typescript
+- vite
+- tailwindcss
+
+Infrastructure:
+
+- docker
+- uv
 - rabbitmq
 - redis
 
@@ -67,14 +79,20 @@ The project is developed in Docker containers using **Vscode**, so you will see 
     {
       "name": "workers",
       "path": "workers"
+    },
+    {
+      "name": "frontend",
+      "path": "frontend"
     }
   ],
   "settings": {
     "files.exclude": {
       "workers/": true,
       "backend/": true,
+      "frontend/": true,
       "**/.venv": true,
-      "**/__pycache__": true
+      "**/__pycache__": true,
+      "node_modules": true
     },
   }
 }
@@ -95,6 +113,7 @@ docker compose up --build --watch
 After a while, the celery service will start. Once it successfully connects to the rabbitmq service and stops displaying information, you can start working.
 
 - <http://127.0.0.1:8000/docs> - address for interacting with the API.
+- <http://127.0.0.1:3000> - address for the web interface.
 - <http://127.0.0.1:15672/> - address for the RabbitMQ access panel (default username is admin, password is 0000)
 
 See the *docker-compose.override.yml* file for available ports to other services.
