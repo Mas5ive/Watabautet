@@ -21,12 +21,12 @@ export const AmpSlider: React.FC<AmpSliderProps> = ({ value, onChange, disabled 
   return (
     <div className="my-8 relative w-full select-none">
       {/* Label */}
-      <div className="mb-2 font-marker text-xl uppercase tracking-widest text-black transform -rotate-1">
+      <div className="mb-2 font-marker text-xl uppercase tracking-widest text-black brutalist-transform">
         Depth Level
       </div>
 
       {/* Track */}
-      <div className="h-6 bg-gray-300 border-4 border-black relative rounded-none flex items-center px-2">
+      <div className="h-6 bg-gray-300 brutalist-border relative rounded-none flex items-center px-2">
         {/* Ticks */}
         <div className="absolute left-0 w-full h-full flex justify-between items-center px-4 pointer-events-none">
           <div className="w-1 h-3 bg-black/30"></div>
@@ -36,7 +36,7 @@ export const AmpSlider: React.FC<AmpSliderProps> = ({ value, onChange, disabled 
 
         {/* The Lever/Handle */}
         <div
-          className="absolute top-1/2 w-8 h-12 bg-yellow-400 border-4 border-black cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 ease-out z-10"
+          className="absolute top-1/2 w-8 h-12 bg-yellow-400 brutalist-border cursor-pointer brutalist-shadow transition-all duration-300 ease-out z-10"
           style={{
             left: `calc(${getPosition()} - 16px)`, // Center the 32px handle (w-8)
             transform: 'translateY(-50%)'

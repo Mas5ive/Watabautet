@@ -28,7 +28,7 @@ export const UrlInput: React.FC<UrlInputProps> = ({
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://youtube.com/watch?v=..."
-                    className="w-full bg-gray-100 border-4 border-black p-4 font-terminal text-2xl focus:bg-yellow-50 outline-none placeholder:text-gray-400 transition-all focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                    className="w-full bg-gray-100 brutalist-border p-4 font-terminal text-2xl focus:bg-yellow-50 outline-none placeholder:text-gray-400 transition-all focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                 />
             </div>
         </div>

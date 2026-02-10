@@ -44,7 +44,7 @@ export const ResultPanelComponent: React.FC<ResultPanelProps> = ({ result, onClo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-white border-4 border-black shadow-[16px_16px_0px_0px_rgba(250,204,21,1)] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col relative transform rotate-1">
+      <div className="bg-white brutalist-border shadow-[16px_16px_0px_0px_rgba(250,204,21,1)] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col relative transform rotate-1">
 
         {/* Header - Terminal Style */}
         <div className="bg-black text-white p-4 flex justify-between items-center font-terminal text-xl border-b-4 border-black">
@@ -92,13 +92,13 @@ export const ResultPanelComponent: React.FC<ResultPanelProps> = ({ result, onClo
               onClick={handleSave}
               disabled={saved || isProcessing}
               className={`
-                        flex items-center gap-2 px-6 py-3 border-4 border-black font-bold font-terminal text-xl
+                        flex items-center gap-2 px-6 py-3 brutalist-border font-bold font-terminal text-xl
                         transition-all duration-200
                         ${saved
                   ? 'bg-green-400 text-black cursor-default'
                   : 'bg-white hover:bg-black hover:text-white active:translate-y-1'
                 }
-                        shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                        brutalist-shadow
                     `}
             >
               {saved ? (
@@ -115,10 +115,10 @@ export const ResultPanelComponent: React.FC<ResultPanelProps> = ({ result, onClo
               onClick={handleDelete}
               disabled={isProcessing}
               className="
-                        flex items-center gap-2 px-6 py-3 border-4 border-black font-bold font-terminal text-xl
+                        flex items-center gap-2 px-6 py-3 brutalist-border font-bold font-terminal text-xl
                         transition-all duration-200
                         bg-red-500 text-white hover:bg-red-700 hover:shadow-none active:translate-y-1
-                        shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                        brutalist-shadow
                     "
             >
               <Trash2 size={20} />

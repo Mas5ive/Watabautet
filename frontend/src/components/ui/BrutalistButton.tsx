@@ -17,8 +17,8 @@ export const BrutalistButton: React.FC<BrutalistButtonProps> = ({
   ...props
 }) => {
   const baseStyles = `
-    font-marker text-xl border-4 border-black transition-all duration-200
-    shadow-[4px_4px_0px_0px_#000] hover:translate-y-1 hover:shadow-none
+    font-marker text-xl brutalist-border transition-all duration-200
+    brutalist-shadow hover:translate-y-1 hover:shadow-none
     active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-50
     flex items-center justify-center gap-2
   `;
@@ -61,14 +61,14 @@ export const ExtractButton: React.FC<ExtractButtonProps> = ({ onClick, isLoading
       disabled={disabled || isLoading}
       className={`
         relative group
-        px-12 py-4 bg-yellow-400 border-4 border-black
+        px-12 py-4 bg-yellow-400 brutalist-border
         font-marker text-3xl uppercase tracking-wider
         shadow-[6px_6px_0px_0px_#000] 
         hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_#000]
         active:translate-x-2 active:translate-y-2 active:shadow-none
         transition-all duration-150
         disabled:opacity-50 disabled:cursor-not-allowed
-        transform -rotate-1 hover:rotate-0
+        brutalist-transform hover:rotate-0
       `}
     >
       {isLoading ? 'EXTRACTING...' : 'EXTRACT'}

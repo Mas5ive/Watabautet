@@ -23,7 +23,7 @@ export const LibraryItemComponent: React.FC<LibraryItemProps> = ({
         <div
             onClick={() => toggleExpand(item.id)}
             className={`
-                relative border-4 border-black bg-white transition-all duration-200 cursor-pointer
+                relative brutalist-border bg-white transition-all duration-200 cursor-pointer
                 ${isExpanded ? 'shadow-[8px_8px_0px_0px_#000] translate-x-1 -translate-y-1' : 'shadow-[4px_4px_0px_0px_#aaa] hover:shadow-[6px_6px_0px_0px_#000]'}
             `}
         >

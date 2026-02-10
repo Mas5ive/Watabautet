@@ -46,4 +46,16 @@
         clip-path: polygon(0% 5%, 5% 0%, 15% 5%, 25% 0%, 35% 5%, 45% 0%, 55% 5%, 65% 0%, 75% 5%, 85% 0%, 95% 5%, 100% 0%,
                 100% 95%, 95% 100%, 85% 95%, 75% 100%, 65% 95%, 55% 100%, 45% 95%, 35% 100%, 25% 95%, 15% 100%, 5% 95%, 0% 100%);
     }
+
+    .brutalist-shadow {
+        @apply shadow-[4px_4px_0px_0px_#000];
+    }
+
+    .brutalist-border {
+        @apply border-4 border-black;
+    }
+
+    .brutalist-transform {
+        @apply transform -rotate-1;
+    }
 }

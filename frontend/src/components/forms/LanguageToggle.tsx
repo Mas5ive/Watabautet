@@ -8,7 +8,7 @@ interface LanguageToggleProps {
 
 export const LanguageToggle: React.FC<LanguageToggleProps> = ({ language, setLanguage }) => {
     return (
-        <div className="flex border-4 border-black shadow-[4px_4px_0px_0px_#000] bg-white transform -rotate-2">
+        <div className="flex brutalist-border brutalist-shadow bg-white transform -rotate-2">
             <button
                 onClick={() => setLanguage('EN')}
                 className={`px-3 py-1 font-bold font-marker text-xl transition-all ${language === 'EN' ? 'bg-yellow-400 text-black' : 'text-gray-400 hover:text-black hover:bg-gray-100'}`}

@@ -38,7 +38,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onSuccess, on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-purple-900/80 backdrop-grayscale p-4">
-      <div className="bg-white w-full max-w-md border-4 border-black p-8 relative shadow-[20px_20px_0px_0px_#000]">
+      <div className="bg-white w-full max-w-md brutalist-border p-8 relative shadow-[20px_20px_0px_0px_#000]">
 
         {/* Decorative Tape */}
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-32 h-8 bg-yellow-400/90 rotate-2 border-l-2 border-r-2 border-white/50"></div>

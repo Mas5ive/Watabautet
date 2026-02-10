@@ -95,7 +95,7 @@ export const LibraryComponent: React.FC = () => {
 
                 {/* Header - Fixed in place (outside scroll container) */}
                 <div className="mb-6 flex-shrink-0 self-start">
-                    <div className="bg-black text-white p-4 font-marker text-2xl transform -rotate-1 border-4 border-yellow-400 inline-block shadow-[8px_8px_0px_0px_rgba(76,29,149,1)]">
+                    <div className="bg-black text-white p-4 font-marker text-2xl brutalist-transform border-4 border-yellow-400 inline-block shadow-[8px_8px_0px_0px_rgba(76,29,149,1)]">
                         SAVED DATA [{items.length}]
                     </div>
                 </div>

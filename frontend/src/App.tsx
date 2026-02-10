@@ -118,7 +118,7 @@ const App: React.FC = () => {
 
                     {/* Right Column: Controls */}
                     <div className="w-full md:w-1/2 max-w-lg mt-8 md:mt-0 order-2 md:order-2 pb-12">
-                        <div className="bg-white p-8 border-4 border-black shadow-[12px_12px_0px_0px_rgba(76,29,149,1)] relative transform md:rotate-1">
+                        <div className="bg-white p-8 brutalist-border shadow-[12px_12px_0px_0px_rgba(76,29,149,1)] relative transform md:rotate-1">
 
                             {/* Decorative Screw Heads */}
                             <div className="absolute top-2 left-2 w-4 h-4 rounded-full border-2 border-gray-400 flex items-center justify-center"><div className="w-full h-[1px] bg-gray-400 rotate-45"></div></div>

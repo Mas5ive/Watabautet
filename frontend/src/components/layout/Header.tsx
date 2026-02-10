@@ -38,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button
                             onClick={() => setView('home')}
                             className={`
-                        px-4 py-2 font-marker text-xl border-4 border-black transition-all shadow-[4px_4px_0px_0px_#000] hover:translate-y-1 hover:shadow-none flex items-center gap-2
+                        px-4 py-2 font-marker text-xl brutalist-border transition-all brutalist-shadow hover:translate-y-1 hover:shadow-none flex items-center gap-2
                         ${view === 'home' ? 'bg-yellow-400 rotate-1' : 'bg-white hover:bg-gray-100 -rotate-1'}
                     `}
                         >
@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button
                             onClick={() => setView('library')}
                             className={`
-                        px-4 py-2 font-marker text-xl border-4 border-black transition-all shadow-[4px_4px_0px_0px_#000] hover:translate-y-1 hover:shadow-none flex items-center gap-2
+                        px-4 py-2 font-marker text-xl brutalist-border transition-all brutalist-shadow hover:translate-y-1 hover:shadow-none flex items-center gap-2
                         ${view === 'library' ? 'bg-purple-400 text-white rotate-1' : 'bg-white hover:bg-gray-100 -rotate-1'}
                     `}
                         >
