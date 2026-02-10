@@ -2,12 +2,13 @@
 
 ## Project Overview
 
-Watabautet is a YouTube video summarization service. It uses a distributed architecture to handle long-running tasks (downloading and AI processing).
+Watabautet is a web application for YouTube video summarization. It uses a distributed architecture to handle long-running tasks (downloading and AI processing), featuring a React-based frontend for user interaction.
 
 ## System Architecture
 
 The system follows a producer-consumer pattern:
 
+- **Frontend (React)**: Provides the user interface for interacting with the application.
 - **Backend (FastAPI)**: Handles user requests, manages the database (PostgreSQL), and dispatches tasks.
 - **Workers (Celery)**: Consumes tasks from RabbitMQ, interacts with external APIs (YouTube, Gemini), and stores results.
 - **Infrastructure**:
@@ -18,6 +19,7 @@ The system follows a producer-consumer pattern:
 ## Service Map
 
 - `/backend`: API layer, authentication, and database management.
+- `/frontend`: User interface built with React and TypeScript.
 - `/workers`: Background processing logic (yt-dlp, Gemini integration).
 
 ## Development
