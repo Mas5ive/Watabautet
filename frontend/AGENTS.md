@@ -1,5 +1,24 @@
 # Style Description
 
+## Coding Style
+
+The frontend is built with React and TypeScript, emphasizing modern, functional programming practices for maintainability and type safety.
+
+### Key Principles
+
+- **Functional Components**: Use functional components with hooks (useState, useEffect, useCallback) instead of class components.
+- **TypeScript Strictness**: Leverage TypeScript for explicit type annotations on props, state, and return types to prevent runtime errors.
+- **Modular Architecture**: Organize code into logical modules: components, services, types, constants, and hooks. Services handle API interactions, components manage UI, and types define data structures.
+- **Async/Await**: Use async/await for asynchronous operations like API calls, with proper error handling using try/catch blocks.
+- **State Management**: Manage component state with useState hooks; avoid complex state libraries unless necessary.
+- **Responsive Design**: Implement responsive layouts using Tailwind CSS utilities, with mobile-first approach.
+- **Styling**: Use Tailwind CSS for utility-first styling, adhering to the brutalist/comic book theme with custom classes and transforms.
+- **Error Handling**: Provide user-friendly error messages and handle API errors gracefully.
+- **Comments**: Add comments for complex logic, multi-step processes, and non-obvious code sections.
+- **Imports**: Group imports by type (React, types, services, components) and keep them at the top of files.
+- **Naming Conventions**: Use PascalCase for components, camelCase for variables/functions, and descriptive names that reflect the brutalist theme where appropriate (e.g., error messages in uppercase).
+- **Performance**: Use useCallback for event handlers to prevent unnecessary re-renders, and optimize images with responsive srcsets.
+
 ## Mascot
 
 The website has a mascot named Wata Bautet. He is designed in the style of brutalist 80s anime and British Underground Comix.
