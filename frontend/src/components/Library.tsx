@@ -11,18 +11,18 @@ import mascotLiesDown from '../pics/mascot_lies_down.png';
 
 // Helper to determine button color based on Size
 const getButtonColor = (size: SummarySize): string => {
-  switch (size) {
-    case SummarySize.SHORT: return 'bg-green-400';
-    case SummarySize.MEDIUM: return 'bg-yellow-400';
-    case SummarySize.LONG: return 'bg-purple-400 text-white';
-  }
+    switch (size) {
+        case SummarySize.SHORT: return 'bg-green-400';
+        case SummarySize.MEDIUM: return 'bg-yellow-400';
+        case SummarySize.LONG: return 'bg-purple-400 text-white';
+    }
 };
 
 // Size order for sorting
 const SIZE_ORDER: Record<SummarySize, number> = {
-  [SummarySize.SHORT]: 1,
-  [SummarySize.MEDIUM]: 2,
-  [SummarySize.LONG]: 3,
+    [SummarySize.SHORT]: 1,
+    [SummarySize.MEDIUM]: 2,
+    [SummarySize.LONG]: 3,
 };
 
 export const LibraryComponent: React.FC = () => {
@@ -30,11 +30,14 @@ export const LibraryComponent: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const isMounted = React.useRef(false);
 
     // State for viewing a specific summary modal
     const [selectedSummary, setSelectedSummary] = useState<{ item: LibraryItem, entry: LibraryEntry } | null>(null);
 
     useEffect(() => {
+        if (isMounted.current) return;
+        isMounted.current = true;
         loadData();
     }, []);
 

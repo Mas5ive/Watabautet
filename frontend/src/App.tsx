@@ -24,7 +24,11 @@ const App: React.FC = () => {
     const [view, setView] = useState<'home' | 'library'>('home');
 
     // Check authentication status on app initialization
+    const isAuthChecked = React.useRef(false);
     useEffect(() => {
+        if (isAuthChecked.current) return;
+        isAuthChecked.current = true;
+
         const restoreAuthState = async () => {
             try {
                 const user = await checkAuthStatus();
