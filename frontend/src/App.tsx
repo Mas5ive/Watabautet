@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthState, ModalType, SummaryResult, SummarySize, Language } from './types';
 import { checkAuthStatus, logoutUser, extractSummary } from './services/api';
 import { Mascot } from './components/Mascot';
@@ -7,7 +7,10 @@ import { ActionBurst } from './components/ActionBurst';
 import { AuthModal } from './components/AuthModal';
 import { ResultPanel } from './components/ResultPanel';
 import { Library } from './components/Library';
-import { LogOut, User as UserIcon, BookOpen, Home } from 'lucide-react';
+import { Header } from './components/layout/Header';
+import { UrlInput } from './components/forms/UrlInput';
+import { LanguageToggle } from './components/forms/LanguageToggle';
+import { ErrorDisplay } from './components/ui/ErrorDisplay';
 
 const App: React.FC = () => {
     const [auth, setAuth] = useState<AuthState>({ isAuthenticated: false, user: null });
@@ -44,12 +47,12 @@ const App: React.FC = () => {
         restoreAuthState();
     }, []);
 
-    const handleAuthSuccess = (user: any) => {
+    const handleAuthSuccess = useCallback((user: any) => {
         setAuth({ isAuthenticated: true, user });
         setModal('none');
-    };
+    }, []);
 
-    const handleLogout = async () => {
+    const handleLogout = useCallback(async () => {
         // Clear the authentication token
         await logoutUser();
 
@@ -58,9 +61,9 @@ const App: React.FC = () => {
         setResult(null);
         setUrl('');
         setView('home'); // Go home on logout
-    };
+    }, []);
 
-    const handleExtract = async () => {
+    const handleExtract = useCallback(async () => {
         setError(null);
 
         // 1. Auth Check
@@ -86,7 +89,7 @@ const App: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [auth.isAuthenticated, url, size, language]);
 
     return (
         <div className="min-h-screen bg-[#f3f4f6] text-black overflow-x-hidden font-terminal relative">
@@ -95,69 +98,13 @@ const App: React.FC = () => {
             <div className="fixed inset-0 pointer-events-none bg-comic-noise opacity-30 z-0"></div>
 
             {/* Header / Nav */}
-            <nav className="relative z-40 p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-sm border-b-2 border-transparent">
-                <div
-                    className="transform -rotate-2 cursor-pointer group"
-                    onClick={() => setView('home')}
-                >
-                    <h1 className="font-marker text-4xl md:text-6xl text-black drop-shadow-[4px_4px_0px_#FACC15] group-hover:drop-shadow-[6px_6px_0px_#FACC15] transition-all">
-                        WATABAUTET
-                    </h1>
-                    <p className="font-terminal text-lg md:text-xl text-purple-900 font-bold bg-yellow-400 inline-block px-2">
-                        THE ESSENCE EXTRACTOR
-                    </p>
-                </div>
-
-                <div className="flex flex-col md:flex-row items-center gap-4">
-                    {/* Navigation Menu (Only if Auth) */}
-                    {auth.isAuthenticated && (
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setView('home')}
-                                className={`
-                            px-4 py-2 font-marker text-xl border-4 border-black transition-all shadow-[4px_4px_0px_0px_#000] hover:translate-y-1 hover:shadow-none flex items-center gap-2
-                            ${view === 'home' ? 'bg-yellow-400 rotate-1' : 'bg-white hover:bg-gray-100 -rotate-1'}
-                        `}
-                            >
-                                <Home size={20} /> HOME
-                            </button>
-                            <button
-                                onClick={() => setView('library')}
-                                className={`
-                            px-4 py-2 font-marker text-xl border-4 border-black transition-all shadow-[4px_4px_0px_0px_#000] hover:translate-y-1 hover:shadow-none flex items-center gap-2
-                            ${view === 'library' ? 'bg-purple-400 text-white rotate-1' : 'bg-white hover:bg-gray-100 -rotate-1'}
-                        `}
-                            >
-                                <BookOpen size={20} /> LIBRARY
-                            </button>
-                        </div>
-                    )}
-
-                    {/* User Controls */}
-                    {auth.isAuthenticated ? (
-                        <div className="flex items-center gap-4 bg-white border-2 border-black p-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                            <div className="flex items-center gap-2 font-bold text-lg">
-                                <UserIcon size={20} className="text-purple-800" />
-                                <span className="uppercase">{auth.user?.username}</span>
-                            </div>
-                            <button
-                                onClick={handleLogout}
-                                className="bg-black text-white hover:bg-red-600 p-1 transition-colors"
-                                title="Disconnect"
-                            >
-                                <LogOut size={20} />
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setModal('login')}
-                            className="font-marker text-xl underline decoration-wavy decoration-purple-600 hover:text-purple-800 transition-colors"
-                        >
-                            [ LOGIN_ACCESS ]
-                        </button>
-                    )}
-                </div>
-            </nav>
+            <Header 
+                auth={auth} 
+                view={view} 
+                setView={setView} 
+                handleLogout={handleLogout} 
+                setModal={setModal} 
+            />
 
             {/* View Routing */}
             {view === 'library' && auth.isAuthenticated ? (
@@ -180,50 +127,15 @@ const App: React.FC = () => {
                             <div className="absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-gray-400 flex items-center justify-center"><div className="w-full h-[1px] bg-gray-400 rotate-45"></div></div>
 
                             {/* Language Switcher & URL Label */}
-                            <div className="mb-8">
-                                <div className="flex justify-between items-end mb-2">
-                                    <label className="font-marker text-2xl transform -skew-x-6 inline-block bg-black text-white px-2">
-                                        YOUTUBE VIDEO
-                                    </label>
-
-                                    {/* Brutalist Language Toggle */}
-                                    <div className="flex border-4 border-black shadow-[4px_4px_0px_0px_#000] bg-white transform -rotate-2">
-                                        <button
-                                            onClick={() => setLanguage('EN')}
-                                            className={`px-3 py-1 font-bold font-marker text-xl transition-all ${language === 'EN' ? 'bg-yellow-400 text-black' : 'text-gray-400 hover:text-black hover:bg-gray-100'}`}
-                                        >
-                                            EN
-                                        </button>
-                                        <div className="w-1 bg-black"></div>
-                                        <button
-                                            onClick={() => setLanguage('RU')}
-                                            className={`px-3 py-1 font-bold font-marker text-xl transition-all ${language === 'RU' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-black hover:bg-gray-100'}`}
-                                        >
-                                            RU
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={url}
-                                        onChange={(e) => setUrl(e.target.value)}
-                                        placeholder="https://youtube.com/watch?v=..."
-                                        className="w-full bg-gray-100 border-4 border-black p-4 font-terminal text-2xl focus:bg-yellow-50 outline-none placeholder:text-gray-400 transition-all focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                                    />
-                                </div>
-                            </div>
+                            <UrlInput url={url} setUrl={setUrl}>
+                                <LanguageToggle language={language} setLanguage={setLanguage} />
+                            </UrlInput>
 
                             {/* Slider */}
                             <AmpSlider value={size} onChange={setSize} disabled={isLoading} />
 
                             {/* Error Display */}
-                            {error && (
-                                <div className="my-4 p-3 bg-red-100 border-l-8 border-red-600 font-terminal text-xl text-red-700 font-bold animate-pulse">
-                                    ERROR: {error}
-                                </div>
-                            )}
+                            <ErrorDisplay error={error || ''} />
 
                             {/* Big Button */}
                             <div className="flex justify-center mt-10">
