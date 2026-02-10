@@ -1,14 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { LibraryItem, SummarySize, LibraryEntry } from '../types';
 import { getLibrary, deleteSummary } from '../services/api';
 import { Mascot } from './Mascot';
 import { ResultPanel } from './ResultPanel';
-import { ChevronDown, ChevronUp, Loader2, PlayCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, PlayCircle } from 'lucide-react';
+import { LoadingSpinner } from './ui/LoadingSpinner';
 
 import mascotStandsWithNotebook from '../pics/mascot_stands_with_a_notebook.png';
 import mascotLiesDown from '../pics/mascot_lies_down.png';
 
-export const Library: React.FC = () => {
+// Helper to determine button color based on Size
+const getButtonColor = (size: SummarySize): string => {
+  switch (size) {
+    case SummarySize.SHORT: return 'bg-green-400';
+    case SummarySize.MEDIUM: return 'bg-yellow-400';
+    case SummarySize.LONG: return 'bg-purple-400 text-white';
+  }
+};
+
+// Size order for sorting
+const SIZE_ORDER: Record<SummarySize, number> = {
+  [SummarySize.SHORT]: 1,
+  [SummarySize.MEDIUM]: 2,
+  [SummarySize.LONG]: 3,
+};
+
+export const LibraryComponent: React.FC = () => {
     const [items, setItems] = useState<LibraryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -35,16 +52,16 @@ export const Library: React.FC = () => {
         }
     };
 
-    const toggleExpand = (id: string) => {
+    const toggleExpand = useCallback((id: string) => {
         setExpandedId(prev => prev === id ? null : id);
-    };
+    }, []);
 
-    const handleViewSummary = (e: React.MouseEvent, item: LibraryItem, entry: LibraryEntry) => {
+    const handleViewSummary = useCallback((e: React.MouseEvent, item: LibraryItem, entry: LibraryEntry) => {
         e.stopPropagation(); // Prevent toggling the accordion
         setSelectedSummary({ item, entry });
-    };
+    }, []);
 
-    const handleDelete = async () => {
+    const handleDelete = useCallback(async () => {
         if (!selectedSummary) return;
 
         try {
@@ -56,16 +73,12 @@ export const Library: React.FC = () => {
         } catch (e: any) {
             setError(e.message || 'Failed to delete summary');
         }
-    };
+    }, [selectedSummary]);
 
-    // Helper to determine button color based on Size
-    const getButtonColor = (size: SummarySize) => {
-        switch (size) {
-            case SummarySize.SHORT: return 'bg-green-400';
-            case SummarySize.MEDIUM: return 'bg-yellow-400';
-            case SummarySize.LONG: return 'bg-purple-400 text-white';
-        }
-    };
+    // Memoized sorted entries for each item
+    const getSortedEntries = useCallback((entries: LibraryEntry[]) => {
+        return [...entries].sort((a, b) => SIZE_ORDER[a.size] - SIZE_ORDER[b.size]);
+    }, []);
 
     return (
         // LAYOUT STRATEGY: 
@@ -94,7 +107,7 @@ export const Library: React.FC = () => {
                 <div className="flex-1 w-full md:overflow-y-auto md:pr-4 custom-scrollbar">
                     {loading ? (
                         <div className="flex justify-center items-center py-20">
-                            <Loader2 className="animate-spin w-16 h-16 text-black" />
+                            <LoadingSpinner size="lg" />
                         </div>
                     ) : (
                         <div className="space-y-4 pb-20 md:pb-0">
@@ -102,10 +115,7 @@ export const Library: React.FC = () => {
                                 const isExpanded = expandedId === item.id;
 
                                 // Sort entries to be neat: Short -> Medium -> Long
-                                const sortedEntries = [...item.entries].sort((a, b) => {
-                                    const order = { [SummarySize.SHORT]: 1, [SummarySize.MEDIUM]: 2, [SummarySize.LONG]: 3 };
-                                    return order[a.size] - order[b.size];
-                                });
+                                const sortedEntries = getSortedEntries(item.entries);
 
                                 return (
                                     <div
@@ -195,3 +205,6 @@ export const Library: React.FC = () => {
         </div>
     );
 };
+
+// Memoized version for performance optimization
+export const Library = React.memo(LibraryComponent);

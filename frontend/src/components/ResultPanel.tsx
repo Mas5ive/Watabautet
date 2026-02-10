@@ -10,7 +10,7 @@ interface ResultPanelProps {
   onDelete?: () => void;
 }
 
-export const ResultPanel: React.FC<ResultPanelProps> = ({ result, onClose, mode = 'preview', onDelete }) => {
+export const ResultPanelComponent: React.FC<ResultPanelProps> = ({ result, onClose, mode = 'preview', onDelete }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,3 +130,6 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({ result, onClose, mode 
     </div>
   );
 };
+
+// Memoized version for performance optimization
+export const ResultPanel = React.memo(ResultPanelComponent);
