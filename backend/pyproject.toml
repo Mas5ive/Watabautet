@@ -28,3 +28,8 @@ dev = [
     "pytest>=8.3.4,<9.0.0",
 ]
 
+
+[tool.autopep8]
+max_line_length = 120
+
+
