@@ -34,3 +34,8 @@ dev = [
 max_line_length = 120
 
 
+[tool.ruff.lint]
+select = ["F", "I", "W", "E"]
+
+[tool.ruff]
+line-length = 120
