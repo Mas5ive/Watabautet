@@ -41,7 +41,7 @@ class TestGetSummary:
 
     @pytest.fixture
     def db_summary(self, db: Session):
-        yield t_utils.create_summary_in_db(session=db, **SUMMARY_PARAMS,  **COMMON_SUMMARY_ATTRIBUTES)
+        yield t_utils.create_summary_in_db(session=db, **SUMMARY_PARAMS, **COMMON_SUMMARY_ATTRIBUTES)
         db.exec(delete(Summary))
         db.commit()
 
@@ -173,7 +173,7 @@ class TestSaveSummary:
 
     @pytest.fixture
     def db_summary(self, db: Session):
-        return t_utils.create_summary_in_db(session=db, **SUMMARY_PARAMS,  **COMMON_SUMMARY_ATTRIBUTES)
+        return t_utils.create_summary_in_db(session=db, **SUMMARY_PARAMS, **COMMON_SUMMARY_ATTRIBUTES)
 
     @pytest.fixture(autouse=True)
     def delete_db_summary(self, db: Session):
@@ -275,7 +275,7 @@ class TestCreateTaskSummary:
 
     @pytest.fixture
     def db_summary(self, db: Session):
-        yield t_utils.create_summary_in_db(session=db, **SUMMARY_PARAMS,  **COMMON_SUMMARY_ATTRIBUTES)
+        yield t_utils.create_summary_in_db(session=db, **SUMMARY_PARAMS, **COMMON_SUMMARY_ATTRIBUTES)
         db.exec(delete(Summary))
         db.commit()
 
@@ -309,7 +309,7 @@ class TestCreateTaskSummary:
         summary_data, video_data = t_utils.get_data_from_message(task_queue)
         assert summary_data['language'] == SUMMARY_PARAMS['language']
         assert summary_data['size'] == SUMMARY_PARAMS['size']
-        assert video_data == {'link': SUMMARY_PARAMS['video_link'],  **COMMON_VIDEO_ATTRIBUTES}
+        assert video_data == {'link': SUMMARY_PARAMS['video_link'], **COMMON_VIDEO_ATTRIBUTES}
         task_id = utils.TaskIdSummary.generate(**SUMMARY_PARAMS)
         task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is not None
@@ -344,7 +344,7 @@ class TestCreateTaskSummary:
         summary_data, video_data = t_utils.get_data_from_message(task_queue)
         assert summary_data['language'] == SUMMARY_PARAMS['language']
         assert summary_data['size'] == SUMMARY_PARAMS['size']
-        assert video_data == {'link': SUMMARY_PARAMS['video_link'],  **COMMON_VIDEO_ATTRIBUTES}
+        assert video_data == {'link': SUMMARY_PARAMS['video_link'], **COMMON_VIDEO_ATTRIBUTES}
         task_id = utils.TaskIdSummary.generate(**SUMMARY_PARAMS)
         task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is not None
@@ -453,7 +453,7 @@ class TestCreateTaskSummary:
         summary_data, video_data = t_utils.get_data_from_message(task_queue)
         assert summary_data['language'] == SUMMARY_PARAMS['language']
         assert summary_data['size'] == SUMMARY_PARAMS['size']
-        assert video_data == {'link': SUMMARY_PARAMS['video_link'],  **COMMON_VIDEO_ATTRIBUTES}
+        assert video_data == {'link': SUMMARY_PARAMS['video_link'], **COMMON_VIDEO_ATTRIBUTES}
 
     def test_create_for_existing_summary_in_db(
             self, client: TestClient, user_token_headers: dict[str, str], db_video, db_summary, task_queue

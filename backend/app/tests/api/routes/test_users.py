@@ -1,12 +1,13 @@
-import app.tests.utils as t_utils
 import pytest
+from fastapi import status
+from fastapi.testclient import TestClient
+from sqlmodel import Session, delete, select
+
+import app.tests.utils as t_utils
 from app import crud
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models import Summary, User, UserRegister, UserSummary, Video
-from fastapi import status
-from fastapi.testclient import TestClient
-from sqlmodel import Session, delete, select
 
 API_BASE_URL = f'{settings.API_V1_STR}/users'
 
@@ -207,7 +208,7 @@ class TestDeleteSummaryForUser:
         response = request.json()
         assert response['detail'] == 'The user is not associated with the summary'
 
-    def test_delete_for_unauthenticated_user(self, client: TestClient, db_summary:  dict[str, str]) -> None:
+    def test_delete_for_unauthenticated_user(self, client: TestClient, db_summary: dict[str, str]) -> None:
         request = client.delete(self.API_ENDPOINT, params=db_summary)
         assert request.status_code == status.HTTP_401_UNAUTHORIZED
 

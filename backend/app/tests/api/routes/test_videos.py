@@ -1,13 +1,14 @@
-import app.api.utils as utils
-import app.tests.utils as t_utils
 import pytest
-from app.core.config import settings
-from app.models import Video
 from celery import states
 from fastapi import status
 from fastapi.testclient import TestClient
 from redis import Redis
 from sqlmodel import Session, delete
+
+import app.api.utils as utils
+import app.tests.utils as t_utils
+from app.core.config import settings
+from app.models import Video
 
 API_BASE_URL = f'{settings.API_V1_STR}/videos'
 

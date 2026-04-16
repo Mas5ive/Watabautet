@@ -1,6 +1,7 @@
-from app.core.config import settings
 from fastapi import status
 from fastapi.testclient import TestClient
+
+from app.core.config import settings
 
 API_BASE_URL = f'{settings.API_V1_STR}/login'
 

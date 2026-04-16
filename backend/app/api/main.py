@@ -1,5 +1,6 @@
-from app.api.routes import login, summaries, users, videos
 from fastapi import APIRouter
+
+from app.api.routes import login, summaries, users, videos
 
 api_router = APIRouter()
 api_router.include_router(login.router)

@@ -1,18 +1,19 @@
 from collections.abc import Generator
 from typing import Any
 
-from kombu.simple import SimpleQueue
 import pytest
+from fastapi.testclient import TestClient
+from kombu import Connection
+from kombu.simple import SimpleQueue
+from redis import Redis
+from sqlmodel import Session, delete
+
 from app.core.config import settings
 from app.core.db import engine
 from app.core.security import get_password_hash
 from app.crud import create_obj
 from app.main import app
 from app.models import User, UserRegister
-from fastapi.testclient import TestClient
-from kombu import Connection
-from redis import Redis
-from sqlmodel import Session, delete
 
 
 @pytest.fixture(scope="session", autouse=True)

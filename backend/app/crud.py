@@ -1,9 +1,10 @@
-from app.core.security import verify_password
-from app.models import Summary, User, UserSummary, Video
 from sqlalchemy import event
 from sqlalchemy.engine.base import Connection
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, SQLModel, delete, func, select
+
+from app.core.security import verify_password
+from app.models import Summary, User, UserSummary, Video
 
 
 def create_obj(*, session: Session, obj: SQLModel) -> SQLModel:

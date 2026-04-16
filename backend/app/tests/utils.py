@@ -1,12 +1,13 @@
 import json
 from datetime import datetime, timedelta, timezone
 
-from app import crud
-from app.models import Summary, Video
 from celery import states
 from kombu import Connection
 from redis import Redis
 from sqlmodel import Session
+
+from app import crud
+from app.models import Summary, Video
 
 VIDEO_LINK = 'v' * 11
 CACHE_KEY_PREFIX: str = 'celery-task-meta-'

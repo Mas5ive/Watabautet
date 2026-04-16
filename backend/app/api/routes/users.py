@@ -1,12 +1,12 @@
 from collections import defaultdict
 from typing import Annotated, Any
 
+from fastapi import APIRouter, HTTPException, Query, status
+
 from app import crud
 from app.api.deps import CurrentUser, SessionDep
 from app.core.security import get_password_hash
-from app.models import (Library, Message, SummaryRequest, SummaryView, User,
-                        UserPublic, UserRegister, VideoForLibrary)
-from fastapi import APIRouter, HTTPException, Query, status
+from app.models import Library, Message, SummaryRequest, SummaryView, User, UserPublic, UserRegister, VideoForLibrary
 
 router = APIRouter(prefix="/users", tags=["users"])
 

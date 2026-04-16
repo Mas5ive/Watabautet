@@ -1,14 +1,15 @@
 from typing import Annotated, Any
 
+from celery import states
+from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import JSONResponse
+
 from app import crud
 from app.api import utils
 from app.api.deps import CeleryDep, CurrentUser, SessionDep
 from app.core.config import settings
 from app.models import Message, Video, VideoRequest, VideoResponse
 from app.utils import calc_diff_curr_time
-from celery import states
-from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
