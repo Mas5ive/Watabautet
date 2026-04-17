@@ -6,9 +6,7 @@ from google.genai import Client, errors, types
 
 from app import utils
 from app.celery import app, logger
-from app.exceptions import (ImpossibleTaskError,
-                            non_retriable_google_api_errors,
-                            retriable_google_api_errors)
+from app.exceptions import ImpossibleTaskError, non_retriable_google_api_errors, retriable_google_api_errors
 
 
 @app.task
