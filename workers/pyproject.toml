@@ -16,6 +16,7 @@ dependencies = [
 dev = [
     "autopep8>=2.3.2,<3.0.0",
     "debugpy<2.0.0,>=1.8.12",
+    "ruff>=0.15.10,<1.0.0",
     "watchdog<7.0.0,>=6.0.0",
 ]
 test = ["pytest<9.0.0,>=8.3.4"]
