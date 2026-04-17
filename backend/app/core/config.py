@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return MultiHostUrl.build(
+        return PostgresDsn.build(
             scheme="postgresql+psycopg",
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
@@ -73,4 +73,4 @@ class Settings(BaseSettings):
         )
 
 
-settings = Settings()
+settings = Settings()  # # pyright: ignore[reportCallIssue]

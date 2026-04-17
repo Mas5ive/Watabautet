@@ -1,4 +1,5 @@
 import uuid
+from typing import ClassVar
 
 from sqlmodel import CheckConstraint, Field, Relationship, SQLModel
 
@@ -79,8 +80,7 @@ class Summary(SummaryView, table=True):
 
 
 class UserSummary(SQLModel, table=True):
-    __tablename__ = 'user_summary'
-
+    __tablename__: ClassVar[str] = 'user_summary'
     id: int | None = Field(default=None, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id")
     summary_id: int = Field(foreign_key="summary.id", ondelete='CASCADE')

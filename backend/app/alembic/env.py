@@ -62,6 +62,10 @@ def run_migrations_online() -> None:
 
     """
     configuration = config.get_section(config.config_ini_section)
+
+    if configuration is None:
+        raise ValueError(f"Section {config.config_ini_section} not found in alembic.ini")
+
     configuration["sqlalchemy.url"] = get_url()
     connectable = engine_from_config(
         configuration,

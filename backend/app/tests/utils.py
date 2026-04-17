@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from celery import states
-from kombu import Connection
+from kombu.simple import SimpleQueue
 from redis import Redis
 from sqlmodel import Session
 
@@ -126,17 +126,17 @@ def create_item_in_cache(
 
 def get_item_from_cache(*, cache: Redis, task_id: str) -> dict | None:
     if value := cache.get(CACHE_KEY_PREFIX + task_id):
-        task_result = json.loads(value.decode('utf-8'))
+        task_result = json.loads(value.decode('utf-8'))  # pyright: ignore[reportAttributeAccessIssue]
         return task_result
 
 
-def get_data_from_message(task_queue: Connection.SimpleQueue) -> list[dict[str, str]] | None:
+def get_data_from_message(task_queue: SimpleQueue) -> list[dict[str, str]] | None:
     """
     Retrieves data from the RabbitMQ message broker queue without blocking.
     A message will be deleted when received!
 
     Args:
-        task_queue (Connection.SimpleQueue): The SimpleQueue instance connected to RabbitMQ.
+        task_queue: The SimpleQueue instance connected to RabbitMQ.
 
     Returns:
         The payload data from the message if available, otherwise None.

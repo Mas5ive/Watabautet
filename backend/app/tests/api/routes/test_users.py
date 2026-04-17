@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -39,7 +41,7 @@ class TestRegisterUser:
         username = 'testuser'
         password = 'password'
         yield {'name': username, 'password': password}
-        db.exec(delete(User).where(User.name == username))
+        db.exec(delete(User).where(User.name == username))  # pyright: ignore[reportArgumentType]
         db.commit()
 
     def test_register_new_user(self, client: TestClient, db: Session, data_for_register: dict[str, str]) -> None:
@@ -78,10 +80,10 @@ class TestDeleteUserMe:
 
         yield {'username': username, 'headers': user_token_headers}
 
-        db.exec(delete(User).where(User.name == username))
+        db.exec(delete(User).where(User.name == username))  # pyright: ignore[reportArgumentType]
         db.commit()
 
-    def test_delete_authenticated_user(self, client: TestClient, db: Session, new_user_data: dict[str, str]) -> None:
+    def test_delete_authenticated_user(self, client: TestClient, db: Session, new_user_data: dict[str, Any]) -> None:
         request = client.delete(self.API_ENDPOINT, headers=new_user_data['headers'])
         assert request.status_code == status.HTTP_200_OK
         response = request.json()
@@ -166,6 +168,8 @@ class TestDeleteSummaryForUser:
         t_utils.create_video_in_db(session=db)
         summary = t_utils.create_summary_in_db(session=db)
         user = crud.get_user_by_name(session=db, name=userdata['name'])
+        if user is None:
+            raise ValueError(f"User {userdata['name']} not found for testing")
         crud.link_user_with_summary(session=db, user=user, summary=summary)
         db.refresh(summary)
         yield summary.model_dump(exclude={'text'})
@@ -222,6 +226,8 @@ class TestGetUsersLibrary:
         video_link_1 = 'q' * 11
         video_link_2 = 'w' * 11
         user = crud.get_user_by_name(session=db, name=userdata['name'])
+        if user is None:
+            raise ValueError(f"User {userdata['name']} not found for testing")
         t_utils.create_video_in_db(session=db, link=video_link_1)
         t_utils.create_video_in_db(session=db, link=video_link_2)
         summary_1 = t_utils.create_summary_in_db(session=db, video_link=video_link_1)
@@ -237,7 +243,7 @@ class TestGetUsersLibrary:
         db.commit()
 
     def test_get_for_authenticated_user(
-            self, client: TestClient, user_token_headers: dict[str, str], video_links: tuple[str]
+            self, client: TestClient, user_token_headers: dict[str, str], video_links: tuple[str, str]
     ) -> None:
         request = client.get(self.API_ENDPOINT, headers=user_token_headers)
         assert request.status_code == status.HTTP_200_OK

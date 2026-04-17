@@ -1,3 +1,5 @@
+from typing import Sequence, TypeVar
+
 from sqlalchemy import event
 from sqlalchemy.engine.base import Connection
 from sqlalchemy.orm import joinedload
@@ -6,8 +8,10 @@ from sqlmodel import Session, SQLModel, delete, func, select
 from app.core.security import verify_password
 from app.models import Summary, User, UserSummary, Video
 
+T = TypeVar("T", bound=SQLModel)
 
-def create_obj(*, session: Session, obj: SQLModel) -> SQLModel:
+
+def create_obj(*, session: Session, obj: T) -> T:
     session.add(obj)
     session.commit()
     session.refresh(obj)
@@ -51,6 +55,8 @@ def get_user_with_summary(*, session: Session, user: User, summary: Summary) -> 
 
 
 def link_user_with_summary(*, session: Session, user: User, summary: Summary) -> UserSummary:
+    if summary.id is None:
+        raise ValueError("Summary must have an ID to be linked")
     user_summary = UserSummary(user_id=user.id, summary_id=summary.id)
     session.add(user_summary)
     session.commit()
@@ -63,12 +69,12 @@ def unlink_user_with_summary(*, session: Session, user_summary: UserSummary) -> 
     session.commit()
 
 
-def get_users_summaries_with_video(*, session: Session, user: User) -> list[Summary]:
+def get_users_summaries_with_video(*, session: Session, user: User) -> Sequence[Summary]:
     summaries_with_video = session.exec(
         select(Summary)
         .join(UserSummary)
         .where(UserSummary.user_id == user.id)
-        .options(joinedload(Summary.video))
+        .options(joinedload(Summary.video))  # pyright: ignore[reportArgumentType]
     ).all()
     return summaries_with_video
 
@@ -87,7 +93,7 @@ def _delete_orphaned_entities_in_db(mapper, connection: Connection, target: User
     if user_summary_count:
         return
 
-    connection.execute(delete(Summary).where(Summary.id == target.summary_id))
+    connection.execute(delete(Summary).where(Summary.id == target.summary_id))  # pyright: ignore[reportArgumentType]
 
     summary_count = connection.execute(
         select(func.count()).select_from(Summary).
@@ -97,4 +103,6 @@ def _delete_orphaned_entities_in_db(mapper, connection: Connection, target: User
     if summary_count:
         return
 
-    connection.execute(delete(Video).where(Video.link == target.summary.video_link))
+    connection.execute(
+        delete(Video).where(Video.link == target.summary.video_link)  # pyright: ignore[reportArgumentType]
+    )

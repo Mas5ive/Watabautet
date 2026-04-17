@@ -306,7 +306,9 @@ class TestCreateTaskSummary:
         assert request.status_code == status.HTTP_202_ACCEPTED
         response = request.json()
         assert response['message'] == 'The task has been created!'
-        summary_data, video_data = t_utils.get_data_from_message(task_queue)
+        message_data = t_utils.get_data_from_message(task_queue)
+        assert message_data is not None
+        summary_data, video_data = message_data
         assert summary_data['language'] == SUMMARY_PARAMS['language']
         assert summary_data['size'] == SUMMARY_PARAMS['size']
         assert video_data == {'link': SUMMARY_PARAMS['video_link'], **COMMON_VIDEO_ATTRIBUTES}
@@ -341,7 +343,9 @@ class TestCreateTaskSummary:
         assert request.status_code == status.HTTP_202_ACCEPTED
         response = request.json()
         assert response['message'] == 'The task has been created!'
-        summary_data, video_data = t_utils.get_data_from_message(task_queue)
+        message_data = t_utils.get_data_from_message(task_queue)
+        assert message_data is not None
+        summary_data, video_data = message_data
         assert summary_data['language'] == SUMMARY_PARAMS['language']
         assert summary_data['size'] == SUMMARY_PARAMS['size']
         assert video_data == {'link': SUMMARY_PARAMS['video_link'], **COMMON_VIDEO_ATTRIBUTES}
@@ -369,7 +373,7 @@ class TestCreateTaskSummary:
         [states.PENDING, states.STARTED, states.RETRY, states.SUCCESS],
     )
     def test_create_when_task_is_in_cache_with_status_non_failed(
-        self, cache: Redis, client: Redis, user_token_headers: dict[str, str], db_video, cache_summary,
+        self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], db_video, cache_summary,
         task_queue, task_status: str
     ) -> None:
         cache_summary(
@@ -385,7 +389,7 @@ class TestCreateTaskSummary:
         assert message_data is None
 
     def test_create_when_task_is_in_cache_with_impossibletaskerror(
-        self, cache: Redis, client: Redis, user_token_headers: dict[str, str], db_video, cache_summary, task_queue
+        self, cache: Redis, client: TestClient, user_token_headers: dict[str, str], db_video, cache_summary, task_queue
     ) -> None:
         cache_summary(
             cache=cache,
@@ -450,7 +454,9 @@ class TestCreateTaskSummary:
         assert request.status_code == status.HTTP_202_ACCEPTED
         response = request.json()
         assert response['message'] == 'The task has been created!'
-        summary_data, video_data = t_utils.get_data_from_message(task_queue)
+        message_data = t_utils.get_data_from_message(task_queue)
+        assert message_data is not None
+        summary_data, video_data = message_data
         assert summary_data['language'] == SUMMARY_PARAMS['language']
         assert summary_data['size'] == SUMMARY_PARAMS['size']
         assert video_data == {'link': SUMMARY_PARAMS['video_link'], **COMMON_VIDEO_ATTRIBUTES}

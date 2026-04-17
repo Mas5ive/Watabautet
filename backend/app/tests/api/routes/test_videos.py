@@ -252,8 +252,9 @@ class TestCreateTaskVideo:
         assert request.status_code == status.HTTP_202_ACCEPTED
         response = request.json()
         assert response['message'] == 'The task has been created!'
-        video_data = t_utils.get_data_from_message(task_queue)[0]
-        assert video_data == {'link': VIDEO_LINK}
+        message_data = t_utils.get_data_from_message(task_queue)
+        assert message_data is not None
+        assert message_data[0] == {'link': VIDEO_LINK}
         task_id = utils.TaskIdVideo.generate(link=VIDEO_LINK)
         task_result = t_utils.get_item_from_cache(cache=cache, task_id=task_id)
         assert task_result is not None
@@ -344,8 +345,9 @@ class TestCreateTaskVideo:
         assert request.status_code == status.HTTP_202_ACCEPTED
         response = request.json()
         assert response['message'] == 'The task has been created!'
-        video_data = t_utils.get_data_from_message(task_queue)[0]
-        assert video_data == {'link': VIDEO_LINK}
+        message_data = t_utils.get_data_from_message(task_queue)
+        assert message_data is not None
+        assert message_data[0] == {'link': VIDEO_LINK}
 
     def test_create_for_existing_video_in_db(
             self, client: TestClient, user_token_headers: dict[str, str], db_video, task_queue
