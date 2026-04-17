@@ -33,3 +33,8 @@ select = ["F", "I", "W", "E"]
 [tool.ruff]
 line-length = 120
 
+
+[tool.pyright]
+include = ["app"]
+typeCheckingMode = "basic"
+pythonVersion = "3.13"
