@@ -1,12 +1,17 @@
 import os
+from typing import TYPE_CHECKING
 
 import requests
-import yt_dlp
 from google.genai import Client, errors, types
+from yt_dlp.utils import DownloadError
+from yt_dlp.YoutubeDL import YoutubeDL
 
 from app import utils
 from app.celery import app, logger
 from app.exceptions import ImpossibleTaskError, non_retriable_google_api_errors, retriable_google_api_errors
+
+if TYPE_CHECKING:
+    from yt_dlp import _Params
 
 
 @app.task
@@ -21,19 +26,19 @@ def get_video_data(video: dict) -> dict:
         dict: A dictionary containing the video's title, description, category, and cleaned subtitle text.
     """
 
-    ydl_opts = {
+    ydl_opts: _Params = {
         'quiet': True,
-        'cachedir': False,
+        'cachedir': None,
 
         # Search only for formats that have already been merged.
         # This will eliminate the need for ffmpeg checking and remove the warning.
         'format': 'b',
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    with YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info('https://youtu.be/' + f'{video['link']}', download=False)
-        except yt_dlp.utils.DownloadError as e:
+        except DownloadError as e:
             for msg in (
                 'Private video',
                 'Age-restricted',
@@ -42,7 +47,7 @@ def get_video_data(video: dict) -> dict:
                 'This video is not available',
                 'The uploader has not made this video available in your country',
             ):
-                if msg in e.msg:
+                if msg in (e.msg or ''):
                     raise ImpossibleTaskError(f'It is impossible to work with video {video['link']}. Reason: {msg}')
             else:
                 logger.warning(f'DownloadError for video {video['link']}. Retrying... Error: {e}')
@@ -69,9 +74,9 @@ def get_video_data(video: dict) -> dict:
     video_text = utils.clean_vtt_text(response.text, is_auto_subtitles=bool(auto_subtitles))
 
     result = {
-        'title': info['title'] or 'no title',
-        'description': info['description'].replace('\n', '') or 'no description',
-        'category': info['categories'][0] if info['categories'] else 'no category',
+        'title': info.get('title') or 'no title',
+        'description': (info.get('description') or 'no description').replace('\n', ''),
+        'category': (info.get('categories') or ['no category'])[0],
         'text': video_text
     }
     return result
