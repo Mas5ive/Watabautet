@@ -9,7 +9,7 @@ dependencies = [
     "celery>=5.4.0,<6.0.0",
     "google-genai>=1.56.0,<2.0.0",
     "redis>=5.2.1,<6.0.0",
-    "yt-dlp>=2025.12.8",
+    "yt-dlp>=2026.3.17",
 ]
 
 [dependency-groups]
