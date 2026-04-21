@@ -14,30 +14,37 @@ from app.core.db import engine
 from app.models import TokenPayload, User
 
 reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/login/access-token"
+    tokenUrl=f"{settings.API_V1_STR}/login/access-token",
+    auto_error=False,
 )
 
 
-def extract_token_from_cookie(access_token: str | None = Cookie(None)) -> str:
+def extract_token(
+    token_from_header: Annotated[str | None, Depends(reusable_oauth2)] = None,
+    access_token: Annotated[str | None, Cookie(include_in_schema=False)] = None,
+) -> str:
     """
-    Extract JWT token from access_token cookie.
-    Cookie format: "Bearer <token>"
+    Extract JWT token from either access_token cookie or Authorization header.
     """
-    if not access_token:
+    # 1. Try to get token from header (Standard for Swagger UI flow)
+    if token_from_header:
+        return token_from_header
+
+    # 2. Try to get token from cookie (Standard for web/frontend flow)
+    if access_token:
+        if access_token.startswith("Bearer "):
+            return access_token[7:]
+        return access_token
+
+    if not access_token and not token_from_header:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
-            headers={"WWW-Authenticate": "Cookie"},
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Remove "Bearer " prefix if present
-    if access_token.startswith("Bearer "):
-        return access_token[7:]
 
-    return access_token
-
-
-TokenDep = Annotated[str, Depends(extract_token_from_cookie)]
+TokenDep = Annotated[str, Depends(extract_token)]
 
 
 def get_db() -> Generator[Session, None, None]:
