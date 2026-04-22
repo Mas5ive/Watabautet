@@ -7,3 +7,8 @@ repos:
         language: system
         files: ^backend/
 
+      - id: workers-hooks
+        name: Workers Service Hooks
+        entry: uv run --project workers/ pre-commit run --config workers/.pre-commit-config.yaml --files
+        language: system
+        files: ^workers/
