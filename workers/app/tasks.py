@@ -6,9 +6,9 @@ from google.genai import Client, errors, types
 from yt_dlp.utils import DownloadError
 from yt_dlp.YoutubeDL import YoutubeDL
 
-from app import utils
 from app.celery import app, logger
 from app.exceptions import ImpossibleTaskError, non_retriable_google_api_errors, retriable_google_api_errors
+from app.subtitle import Subtitle
 
 if TYPE_CHECKING:
     from yt_dlp import _Params
@@ -53,25 +53,21 @@ def get_video_data(video: dict) -> dict:
                 logger.warning(f'DownloadError for video {video['link']}. Retrying... Error: {e}')
                 raise
 
-    subtitles = info.get('subtitles', {})
-    auto_subtitles = info.get('automatic_captions', {})
-
-    all_subtitles = (subtitles, auto_subtitles)
-    if not any(all_subtitles):
+    if urls_subtitles := info.get('subtitles', {}):
+        subtitle = Subtitle(tracks_by_lang=urls_subtitles, is_auto=False)
+    elif urls_auto_subtitles := info.get('automatic_captions', {}):
+        subtitle = Subtitle(tracks_by_lang=urls_auto_subtitles, is_auto=True)
+    else:
         raise ImpossibleTaskError(f'The video {video['link']} has no subtitles')
 
-    subs_url = utils.get_url_vtt_subtitles(*all_subtitles)
-    if not subs_url:
-        raise ImpossibleTaskError(f'The video {video['link']} has no VTT-subtitles')
-
     try:
-        response = requests.get(subs_url, timeout=30)
-        response.raise_for_status()  # HTTP (4xx, 5xx)
+        video_text = subtitle.get()
     except requests.exceptions.RequestException as e:
         logger.warning(f'RequestException for subtitles on video {video['link']}. Retrying... Error: {e}')
         raise
 
-    video_text = utils.clean_vtt_text(response.text, is_auto_subtitles=bool(auto_subtitles))
+    if not video_text:
+        raise ImpossibleTaskError(f'The video {video['link']} has no VTT-subtitles')
 
     result = {
         'title': info.get('title') or 'no title',
