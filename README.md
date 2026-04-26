@@ -2,42 +2,34 @@
 
 ## Description
 
-Watabautet is a web application that provides users with the ability to extract summarised content from YouTube videos. It features a user-friendly frontend interface built with React and TypeScript. To generate the summary, a machine learning model, Gemini, is used, which is accessed via the API. The main use of the app is to speed up information retrieval from long videos, with the ability to save and organise the extracted summaries for future use.
+Watabautet is a web application that provides users with the ability to extract summarised content from YouTube videos. It features a user-friendly frontend interface. To generate the summary, a machine learning model, Gemini, is used, which is accessed via the API. The main use of the app is to speed up information retrieval from long videos, with the ability to save and organise the extracted summaries for future use.
 
 ### Available features
 
-1. Translation of any video into any language
+1. Translation of any video into English or Russian.
 2. 3 types of summaries to choose from (short, medium, detailed)
 3. Saving of summarization results in the user's personal library
 
-### Technical features
-
->**The project deliberately uses overengineering!**
-
-Technologies:
-
-Backend:
-
-- python 3.13
-- fastapi
-- postgres
-- celery
-
-Frontend:
-
-- react
-- typescript
-- vite
-- tailwindcss
-
-Infrastructure:
+### Technical implementation
 
 - docker
 - uv
-- rabbitmq
+- python 3.13
+- node 22.20
+- PostgreSQL 15
 - redis
+- RabbitMQ
 
-The tests are mainly written for the backend service in a mixed style.
+#### Project Structure
+
+- **/backend**: API layer (FastAPI + Celery), authentication, and business logic.
+- **/frontend**: User interface (React + TypeScript + Vite + Tailwindcss).
+- **/workers**: Background processing (Celery + yt-dlp + Gemini API).
+
+#### Notes
+
+1. The project deliberately uses overengineering.
+2. The tests are mainly written for the backend service in a mixed style.
 
 ### Performance
 
@@ -98,19 +90,35 @@ The project is developed in Docker containers using **Vscode**, so you will see 
 }
 ```
 
-To create virtual environments for services, navigate to directories containing the *uv.lock* files and execute the command:
+### Initialization
+
+For the **backend** and **worker** services, download the required version of Python and create a virtual environment by navigating to each directory and running the following commands:
+
+```bash
+uv python install 3.13
+```
 
 ```bash
 uv sync --locked --group dev
 ```
 
-Now everything is ready! Run the command from the project root directory to start the application:
+For the **frontend** service, download the required version of Node.js using your version manager (such as nvm).
+
+Then, in the directory, run the following command:
+
+```bash
+npm ci
+```
+
+### Run
+
+Run the command from the project root directory to start the application:
 
 ```bash
 docker compose up --build --watch
 ```
 
-After a while, the celery service will start. Once it successfully connects to the rabbitmq service and stops displaying information, you can start working.
+After a while, the new messages will stop appearing in the logs, and you can get started!
 
 - <http://127.0.0.1:8000/docs> - address for interacting with the API.
 - <http://127.0.0.1:3000> - address for the web interface.
@@ -118,8 +126,31 @@ After a while, the celery service will start. Once it successfully connects to t
 
 See the *docker-compose.override.yml* file for available ports to other services.
 
-To stop the application, press **Ctrl+C** in the terminal. If you need to delete the Docker containers along with all data, run the command:
+To stop the application, press **Ctrl+C** in the terminal.
+
+### Commits
+
+The project includes pre-commit hooks for Python services. Enable
+them:
 
 ```bash
-docker compose down -v
+uv run --project backend/ pre-commit install
+```
+
+There are also formatting and linting scripts available for these services. To use them, navigate to the relevant service directory and run:
+
+```bash
+bash scripts/lint.sh
+```
+
+```bash
+bash scripts/format.sh
+```
+
+### Remove
+
+If you need to remove the Docker containers along with all data, run the command:
+
+```bash
+docker compose down -v --rmi all
 ```
