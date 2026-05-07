@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     # maximum allowable waiting time after a failed task
     FAILURE_COOLDOWN_SEC: int
 
-    # 60 minutes * 24 hours * 7 days = 7 days
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+    # 3600 seconds * 24 hours * 7 days = 1 week
+    ACCESS_TOKEN_EXPIRE_SEC: int = 60 * 60 * 24 * 7
 
     REDIS_HOST: str = ""
     REDIS_PORT: int = 6379

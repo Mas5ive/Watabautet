@@ -26,10 +26,9 @@ def login_access_token(
     )
     if not user:
         raise HTTPException(status_code=400, detail='Incorrect name or password')
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = security.create_access_token(
-        user.id, expires_delta=access_token_expires
-    )
+
+    access_token_expires = timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SEC)
+    access_token = security.create_access_token(user.id, expires_delta=access_token_expires)
 
     # Set token in httpOnly cookie
     response.set_cookie(
@@ -38,7 +37,7 @@ def login_access_token(
         httponly=True,
         secure=True,  # Set to True in production with HTTPS
         samesite="lax",
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_SEC,
         path="/",
     )
 
