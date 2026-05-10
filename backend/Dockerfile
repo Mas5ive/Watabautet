@@ -19,8 +19,14 @@ COPY ./backend/scripts ./scripts
 COPY ./backend/app ./app
 
 
+FROM base AS prod
+
+ENV LOG_ENV=prod
+
 
 FROM base AS dev
+
+ENV LOG_ENV=dev
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --group dev

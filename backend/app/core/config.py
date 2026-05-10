@@ -12,6 +12,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
     PROJECT_NAME: str
+    LOG_ENV: str = 'dev'
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
 

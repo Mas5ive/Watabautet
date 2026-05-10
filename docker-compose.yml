@@ -23,7 +23,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-      target: base
+      target: prod
     env_file:
       - .env
       - backend/.env
