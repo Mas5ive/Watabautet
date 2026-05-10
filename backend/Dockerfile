@@ -21,6 +21,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM builder AS dev
 
+ENV LOG_ENV=dev
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=backend/uv.lock,target=uv.lock \
     --mount=type=bind,source=backend/pyproject.toml,target=pyproject.toml \
@@ -32,6 +34,8 @@ COPY ./backend/app ./app
 
 
 FROM base AS prod
+
+ENV LOG_ENV=prod
 
 COPY --from=builder /backend/.venv /backend/.venv
 COPY ./backend/uv.lock ./backend/pyproject.toml ./backend/alembic.ini /backend/
