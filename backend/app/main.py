@@ -1,12 +1,14 @@
 import logging
+import uuid
 from contextlib import asynccontextmanager
 
 import structlog
 from celery import Celery
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
-from structlog.contextvars import merge_contextvars
+from structlog.contextvars import bind_contextvars, clear_contextvars, merge_contextvars
 
 from app.api.main import api_router
 from app.core.config import settings
@@ -76,5 +78,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware('http')
+async def logging_middleware(request: Request, call_next):
+    clear_contextvars()
+    request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
+    bind_contextvars(request_id=request_id, method=request.method, path=request.url.path)
+
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as exc:
+        logger = structlog.get_logger()
+        logger.exception('unhandled_runtime_error', error=str(exc))
+
+        if settings.LOG_ENV == 'dev':
+            raise exc
+
+        return JSONResponse(
+            status_code=500,
+            content={'message': 'Internal Server Error'}
+        )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
