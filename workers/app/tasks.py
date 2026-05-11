@@ -2,16 +2,19 @@ import os
 from typing import TYPE_CHECKING
 
 import requests
+import structlog
 from google.genai import Client, errors, types
 from yt_dlp.utils import DownloadError
 from yt_dlp.YoutubeDL import YoutubeDL
 
-from app.celery import app, logger
+from app.celery import app
 from app.exceptions import ImpossibleTaskError, non_retriable_google_api_errors, retriable_google_api_errors
 from app.subtitle import Subtitle
 
 if TYPE_CHECKING:
     from yt_dlp import _Params
+
+logger = structlog.get_logger()
 
 
 @app.task
