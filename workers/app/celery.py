@@ -1,5 +1,6 @@
 import logging.config
 import os
+from typing import Any
 
 import structlog
 from celery import Celery, Task
@@ -91,6 +92,45 @@ def on_setup_logging(**kwargs) -> None:
         context_class=dict,
         cache_logger_on_first_use=True,
     )
+
+
+class StructlogYTDLPLogger:
+    def __init__(self, ydl: Any = None) -> None:
+        self.logger = structlog.get_logger().bind(logger_name='yt-dlp')
+
+    def debug(self, message: str) -> None:
+        self.logger.debug(message)
+
+    def info(self, message: str) -> None:
+        self.logger.info(message)
+
+    def warning(self, message: str, *, once: bool = False, only_once: bool = False) -> None:
+        # Ignore specific non-critical warnings from yt-dlp
+        for line in [
+            "Unable to download webpage: HTTPSConnection(host='www.youtube.com'",
+            "No supported JavaScript runtime could be found"
+        ]:
+            if line in message:
+                return
+
+        self.logger.warning(message)
+
+    def error(self, message: str) -> None:
+        # Reduce the level of certain errors
+        for line in [
+            "Unable to download API page: HTTPSConnection(host=\'www.youtube.com\'"
+        ]:
+            if line in message:
+                self.logger.warning(message)
+                return
+
+        self.logger.error(message)
+
+    def stdout(self, message: str) -> None:
+        self.logger.info(message)
+
+    def stderr(self, message: str) -> None:
+        self.logger.error(message)
 
 
 class CustomTask(Task):
