@@ -6,6 +6,7 @@ import structlog
 from celery import Celery, Task
 from celery.signals import setup_logging as celery_setup_logging
 from celery.signals import task_prerun
+from httpx import ConnectError
 from requests.exceptions import RequestException
 from structlog.contextvars import bind_contextvars, clear_contextvars, merge_contextvars
 from yt_dlp.utils import DownloadError
@@ -146,6 +147,7 @@ class CustomTask(Task):
     autoretry_for = (
         DownloadError,
         RequestException,
+        ConnectError,
         *retriable_google_api_errors.values()
     )
     throws = (ImpossibleTaskError, *retriable_google_api_errors.values())
