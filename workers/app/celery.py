@@ -5,11 +5,12 @@ from typing import Any
 import structlog
 from celery import Celery, Task
 from celery.signals import setup_logging as celery_setup_logging
+from celery.signals import task_prerun
 from requests.exceptions import RequestException
-from structlog.contextvars import merge_contextvars
+from structlog.contextvars import bind_contextvars, clear_contextvars, merge_contextvars
 from yt_dlp.utils import DownloadError
 
-from app.exceptions import retriable_google_api_errors
+from app.exceptions import ImpossibleTaskError, retriable_google_api_errors
 
 LOG_ENV = os.getenv('LOG_ENV', 'dev')
 
@@ -133,12 +134,21 @@ class StructlogYTDLPLogger:
         self.logger.error(message)
 
 
+@task_prerun.connect
+def on_task_prerun(task_id, task, *args, **kwargs):
+    clear_contextvars()
+    headers = task.request.headers or {}
+    request_id = headers.get('request_id')
+    bind_contextvars(request_id=request_id, task_id=task_id, task_name=task.name)
+
+
 class CustomTask(Task):
     autoretry_for = (
         DownloadError,
         RequestException,
         *retriable_google_api_errors.values()
     )
+    throws = (ImpossibleTaskError, *retriable_google_api_errors.values())
     retry_backoff = True
     max_retries = int(os.getenv('CELERY_TASK_MAX_RETRIES', 8))
     retry_backoff_max = int(os.getenv('CELERY_TASK_BACKOFF_MAX', 600))

@@ -1,13 +1,12 @@
 import os
 from typing import TYPE_CHECKING
 
-import requests
 import structlog
 from google.genai import Client, errors, types
 from yt_dlp.utils import DownloadError
 from yt_dlp.YoutubeDL import YoutubeDL
 
-from app.celery import app
+from app.celery import StructlogYTDLPLogger, app
 from app.exceptions import ImpossibleTaskError, non_retriable_google_api_errors, retriable_google_api_errors
 from app.subtitle import Subtitle
 
@@ -28,14 +27,22 @@ def get_video_data(video: dict) -> dict:
     Returns:
         dict: A dictionary containing the video's title, description, category, and cleaned subtitle text.
     """
+    log = logger.bind(video_link=video['link'])
+    log.info('received')
 
     ydl_opts: _Params = {
         'quiet': True,
         'cachedir': None,
-
         # Search only for formats that have already been merged.
         # This will eliminate the need for ffmpeg checking and remove the warning.
         'format': 'b',
+        'logger': StructlogYTDLPLogger(),
+
+        # Completely disable any internal tries by yt-dlp
+        'retries': 0,
+        'extractor_retries': 0,
+        'fragment_retries': 0,
+        'file_access_retries': 0,
     }
 
     with YoutubeDL(ydl_opts) as ydl:
@@ -51,9 +58,9 @@ def get_video_data(video: dict) -> dict:
                 'The uploader has not made this video available in your country',
             ):
                 if msg in (e.msg or ''):
-                    raise ImpossibleTaskError(f'It is impossible to work with video {video['link']}. Reason: {msg}')
+                    log.info('rejected', reason='impossible_task', details=e.msg)
+                    raise ImpossibleTaskError(f'Unfortunately, this video cannot be processed. Reason: {msg}')
             else:
-                logger.warning(f'DownloadError for video {video['link']}. Retrying... Error: {e}')
                 raise
 
     if urls_subtitles := info.get('subtitles', {}):
@@ -61,16 +68,14 @@ def get_video_data(video: dict) -> dict:
     elif urls_auto_subtitles := info.get('automatic_captions', {}):
         subtitle = Subtitle(tracks_by_lang=urls_auto_subtitles, is_auto=True)
     else:
-        raise ImpossibleTaskError(f'The video {video['link']} has no subtitles')
+        log.info('rejected', reason='impossible_task', details='no_subtitles')
+        raise ImpossibleTaskError('The video has no subtitles.')
 
-    try:
-        video_text = subtitle.get()
-    except requests.exceptions.RequestException as e:
-        logger.warning(f'RequestException for subtitles on video {video['link']}. Retrying... Error: {e}')
-        raise
+    video_text = subtitle.get()  # A `requests.exceptions.RequestException` exception may occur here
 
     if not video_text:
-        raise ImpossibleTaskError(f'The video {video['link']} has no VTT-subtitles')
+        log.info('rejected', reason='impossible_task', details='no_vtt_subtitles')
+        raise ImpossibleTaskError('The video has no VTT-subtitles.')
 
     result = {
         'title': info.get('title') or 'no title',
@@ -78,6 +83,7 @@ def get_video_data(video: dict) -> dict:
         'category': (info.get('categories') or ['no category'])[0],
         'text': video_text
     }
+    log.info('succeeded')
     return result
 
 
@@ -92,6 +98,9 @@ def make_summary(summary: dict, video: dict) -> dict:
     Returns:
         dict: A dictionary containing the video link, summary size, language, and the generated summary text.
     """
+    log = logger.bind(video_link=video['link'])
+    log.info('received')
+
     size_instructions = {
         'small': ('Create a very brief summary (TL;DR). It should be 1-2 sentences long and reflect the most important '
                   'point or key takeaway from the video.'),
@@ -134,18 +143,22 @@ def make_summary(summary: dict, video: dict) -> dict:
             text = response.text
         except errors.APIError as e:
             if e.code in retriable_google_api_errors:
-                logger.warning(f'Google API error for video {video['link']}. Retrying... Error: {e}')
-                raise retriable_google_api_errors[e.code](e)
+                sub_e = retriable_google_api_errors[e.code](code=e.code, response_json=e.details, response=e.response)
+                log.warning('rejected', reason='google_api_error', details=sub_e)
+                raise sub_e
             elif e.code in non_retriable_google_api_errors:
-                raise ImpossibleTaskError(f'Google API error for video {video['link']}. Error: {e}')
+                sub_e = non_retriable_google_api_errors[e.code](
+                    code=e.code, response_json=e.details, response=e.response
+                )
+                log.info('rejected', reason='impossible_task', details=sub_e)
+                raise ImpossibleTaskError('Google API error for the video.')
             else:
-                logger.error(f'Unexpected Google API error for video {video['link']}. Error: {e}')
                 raise
         except ValueError as e:
-            raise ImpossibleTaskError(
-                f'Content generation from video {video['link']} failed, likely due to safety filters. Reason: {e}'
-            )
+            log.info('rejected', reason='impossible_task', details=str(e))
+            raise ImpossibleTaskError('Content generation from the video failed, likely due to safety filters.')
 
+    log.info('succeeded')
     return {
         'video_link': video['link'],
         'size': summary['size'],
