@@ -141,6 +141,7 @@ def make_summary(summary: dict, video: dict) -> dict:
         try:
             response = client.models.generate_content(model=os.environ["GOOGLE_LLM"], contents=prompt)
             text = response.text
+        # An error httpx.ConnectError may also occur here
         except errors.APIError as e:
             if e.code in retriable_google_api_errors:
                 sub_e = retriable_google_api_errors[e.code](code=e.code, response_json=e.details, response=e.response)
