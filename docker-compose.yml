@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "20m"
+    max-file: "3"
+
 services:
 
   db:
@@ -16,7 +22,8 @@ services:
       retries: 4
     networks: 
       - default
-  
+    logging: *default-logging 
+
   backend:
     container_name: fastapi
     hostname: fastapi
@@ -38,6 +45,7 @@ services:
         condition: service_healthy
     networks: 
       - default
+    logging: *default-logging
 
   workers:
     container_name: celery
@@ -58,6 +66,7 @@ services:
         condition: service_healthy
     networks: 
       - default
+    logging: *default-logging
     
   frontend:
     container_name: frontend
@@ -71,6 +80,7 @@ services:
       - 80:80
     networks:
       - default
+    logging: *default-logging
 
   cache:
     container_name: redis
@@ -91,7 +101,7 @@ services:
       start_period: 5s
     networks:
       - default
-
+    logging: *default-logging
   
   broker:
     container_name: rabbitmq
@@ -109,6 +119,7 @@ services:
       retries: 4
     networks:
       - default
+    logging: *default-logging
 
 volumes:
   db_data:
