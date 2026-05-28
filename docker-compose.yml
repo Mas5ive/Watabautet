@@ -14,7 +14,7 @@ services:
       - .env
     volumes:
       - db_data:/var/lib/postgresql/data
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -34,7 +34,7 @@ services:
     env_file:
       - .env
       - backend/.env
-    restart: always
+    restart: unless-stopped
     command: bash /backend/scripts/run.sh
     depends_on:
       cache:
@@ -57,7 +57,7 @@ services:
     env_file:
       - .env
       - workers/.env
-    restart: always
+    restart: unless-stopped
     command: bash /workers/scripts/run.sh
     depends_on:
       cache:
@@ -75,7 +75,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: prod
-    restart: always
+    restart: unless-stopped
     ports:
       - 80:80
     networks:
@@ -90,7 +90,7 @@ services:
       - .env
     volumes:
       - cache_data:/data
-    restart: always
+    restart: unless-stopped
     entrypoint: ["redis-server"]
     command: ["--requirepass", "$REDIS_PASSWORD"]
     healthcheck:
@@ -111,7 +111,7 @@ services:
       - .env
     volumes:
       - broker_data:/var/lib/rabbitmq
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
       interval: 5s
@@ -132,7 +132,7 @@ services:
     volumes:
       - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml
       - logs_db_data:/loki
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test: [ "CMD", "/usr/bin/loki", "-health" ]
       interval: 10s
@@ -153,7 +153,7 @@ services:
     depends_on:
       logs-db:
         condition: service_healthy
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test:
         - "CMD-SHELL"
@@ -180,7 +180,7 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=14d'
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy || exit 1"]
       interval: 10s
@@ -223,7 +223,7 @@ services:
             isDefault: true
         EOF
         /run.sh
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1" ]
       interval: 10s
