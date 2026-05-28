@@ -189,12 +189,58 @@ services:
     networks:
       - default
 
+  supervisor:
+    profiles: ["monitoring"]
+    container_name: grafana
+    image: grafana/grafana:13.0.1-security-01
+    env_file:
+      - .env
+    ports:
+      - 3000:3000
+    volumes:
+      - supervisor_data:/var/lib/grafana
+    depends_on:
+      logs-db:
+        condition: service_healthy
+      metrics-db:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+          - name: Loki
+            type: loki
+            access: proxy
+            url: http://logs-db:3100
+          - name: Prometheus
+            type: prometheus
+            access: proxy
+            url: http://metrics-db:9090
+            isDefault: true
+        EOF
+        /run.sh
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+
 volumes:
   db_data:
   cache_data:
   broker_data:
   logs_db_data:
   metrics_db_data:
+  supervisor_data:
+
 
 networks:
   default:
