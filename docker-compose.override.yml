@@ -51,7 +51,7 @@ services:
       dockerfile: Dockerfile
       target: dev
     ports:
-      - 3000:3000
+      - 3500:3500
     restart: no
     develop:
       watch:
