@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+from prometheus_fastapi_instrumentator import Instrumentator
 from structlog.contextvars import bind_contextvars, clear_contextvars, merge_contextvars
 
 from app.api.main import api_router
@@ -18,6 +19,8 @@ if settings.LOG_ENV not in ['dev', 'prod']:
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
+    if not route.tags:
+        return route.name
     return f"{route.tags[0]}-{route.name}"
 
 
@@ -100,5 +103,9 @@ async def logging_middleware(request: Request, call_next):
             status_code=500,
             content={'message': 'Internal Server Error'}
         )
+
+# Instrument the application and export the /metrics endpoint.
+# If this is a multi-process mode, the metrics from all workers will be aggregated.
+Instrumentator().instrument(app).expose(app)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
