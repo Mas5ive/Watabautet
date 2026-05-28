@@ -36,6 +36,7 @@ COPY ./backend/app ./app
 FROM base AS prod
 
 ENV LOG_ENV=prod
+ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc_dir
 
 COPY --from=builder /backend/.venv /backend/.venv
 COPY ./backend/uv.lock ./backend/pyproject.toml ./backend/alembic.ini /backend/
