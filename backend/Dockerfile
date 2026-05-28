@@ -22,6 +22,7 @@ COPY ./backend/app ./app
 FROM base AS prod
 
 ENV LOG_ENV=prod
+ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc_dir
 
 
 FROM base AS dev

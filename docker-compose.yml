@@ -162,11 +162,32 @@ services:
     networks:
       - default
 
+  prometheus:
+    profiles: ["monitoring"]
+    container_name: prometheus
+    image: prom/prometheus:v3.11.3
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=14d'
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
 volumes:
   db_data:
   cache_data:
   broker_data:
   loki_data:
+  prometheus_data:
 
 networks:
   default:
