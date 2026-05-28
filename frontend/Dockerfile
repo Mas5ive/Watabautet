@@ -13,7 +13,7 @@ COPY metadata.json .
 
 FROM base AS dev
 
-EXPOSE 3000
+EXPOSE 3500
 
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 

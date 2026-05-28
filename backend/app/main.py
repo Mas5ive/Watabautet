@@ -69,8 +69,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",  # Frontend development server
-        "http://frontend:3000",   # Frontend in docker network
+        "http://localhost:3500",  # Frontend development server
+        "http://frontend:3500",   # Frontend in docker network
         "http://localhost:80",    # Frontend production
         "http://frontend",        # Frontend service name
     ],
