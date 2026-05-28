@@ -121,10 +121,31 @@ services:
       - default
     logging: *default-logging
 
+  loki:
+    profiles: ["monitoring"]
+    container_name: loki
+    image: grafana/loki:3.7.2
+    expose:
+      # This is the main port through which Loki receives logs (from Alloy) and sends logs (to Grafana)
+      - 3100
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    restart: always
+    healthcheck:
+      test: [ "CMD", "/usr/bin/loki", "-health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
 volumes:
   db_data:
   cache_data:
   broker_data:
+  loki_data:
 
 networks:
   default:
