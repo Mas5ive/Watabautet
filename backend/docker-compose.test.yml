@@ -27,13 +27,16 @@ services:
     ports:
       - 5680:5680
     env_file:
-      - .env
       - ../.env
     environment:
       - DEBUG=false # or true
+      - PROJECT_NAME=Watabautet
+      - SECRET_KEY=topsecret
+      - FAILURE_COOLDOWN_SEC=600
+      - SQLALCHEMY_ECHO=False
     restart: no
     command: |
-      sh -c "
+      sh -c " 
         trap 'echo Backend received signal, exiting gracefully...; exit 0' TERM INT;
         echo \"Backend running, PID $$ - waiting for signal\";
         while true; do
