@@ -68,6 +68,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+print('wow')
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
