@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'backend/**'
+      - 'workers/**'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'backend/**'
+      - 'workers/**'
+
+jobs:
+  filter-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Filter changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            workers:
+              - 'workers/**'
+
+  lint:
+    needs: filter-paths
+    if: ${{ needs.filter-paths.outputs.services != '[]' && needs.filter-paths.outputs.services != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJSON(needs.filter-paths.outputs.services) }}
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: '3.13'
+          cache-dependency-glob: "${{ matrix.service }}/uv.lock"
+
+      - name: Install dependencies
+        working-directory: ./${{ matrix.service }}
+        run: uv sync --frozen --dev
+
+      - name: Run lint
+        working-directory: ./${{ matrix.service }}
+        run: bash scripts/lint.sh
+
