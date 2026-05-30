@@ -27,10 +27,13 @@ services:
     ports:
       - 5680:5680
     env_file:
-      - .env
       - ../.env
     environment:
       - DEBUG=false # or true
+      - PROJECT_NAME=Watabautet
+      - SECRET_KEY=topsecret
+      - FAILURE_COOLDOWN_SEC=600
+      - SQLALCHEMY_ECHO=False
     restart: no
     command: |
       sh -c "
