@@ -19,12 +19,17 @@ Watabautet is a web application that provides users with the ability to extract 
 - PostgreSQL 15
 - redis
 - RabbitMQ
+- Loki
+- Alloy
+- Prometheus
+- Grafana
 
 #### Project Structure
 
 - **/backend**: API layer (FastAPI + Celery), authentication, and business logic.
 - **/frontend**: User interface (React + TypeScript + Vite + Tailwindcss).
-- **/workers**: Background processing (Celery + yt-dlp + Gemini API).
+- **/workers**: Background processing (Celery + yt-dlp + Gemini API),
+- **/monitoring**: Service settings for monitoring their performance.
 
 #### Notes
 
@@ -121,12 +126,18 @@ docker compose up --build --watch
 After a while, the new messages will stop appearing in the logs, and you can get started!
 
 - <http://127.0.0.1:8000/docs> - address for interacting with the API.
-- <http://127.0.0.1:3000> - address for the web interface.
+- <http://127.0.0.1:3500> - address for the web interface.
 - <http://127.0.0.1:15672/> - address for the RabbitMQ access panel (default username is admin, password is 0000)
 
 See the *docker-compose.override.yml* file for available ports to other services.
 
 To stop the application, press **Ctrl+C** in the terminal.
+
+### Monitoring
+
+By default, all monitoring services are disabled. To enable them, use the additional flag `--profile monitoring` in docker compose commands (when starting and shutting down the application). For example, run `docker compose --profile monitoring up`. To monitor the application's performance, use the Grafana service at <http://127.0.0.1:3000>.
+
+Please note that the logging format varies depending on the environment. In production, it is in JSON format.
 
 ### Commits
 
