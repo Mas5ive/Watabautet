@@ -1,7 +1,8 @@
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
+from celery.canvas import Signature
 from google.genai import Client, errors, types
 from yt_dlp.utils import DownloadError
 from yt_dlp.YoutubeDL import YoutubeDL
@@ -16,16 +17,15 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 
-@app.task
-def get_video_data(video: dict) -> dict:
+@app.task(bind=True)
+def get_video_data(self, video: dict) -> Any:
     """
-    Retrieves video data, including title, description, category, and cleaned VTT subtitles.
-    The task will retry if a DownloadError or RequestException occurs.
+    Retrieves video data, including title, description, and category.
+    The task will retry if a DownloadError occurs.
     Raises:
-        ImpossibleTaskError: If the video is unavailable, age-restricted, has no subtitles,
-                               or no VTT subtitles are found.
+        ImpossibleTaskError: If the video is unavailable, age-restricted or has no subtitles.
     Returns:
-        dict: A dictionary containing the video's title, description, category, and cleaned subtitle text.
+        Any: A signature for the next task in the chain (download_subtitles).
     """
     log = logger.bind(video_link=video['link'])
     log.info('received')
@@ -64,13 +64,50 @@ def get_video_data(video: dict) -> dict:
                 raise
 
     if urls_subtitles := info.get('subtitles', {}):
-        subtitle = Subtitle(tracks_by_lang=urls_subtitles, is_auto=False)
+        subtitle_tracks = urls_subtitles
+        is_auto = False
     elif urls_auto_subtitles := info.get('automatic_captions', {}):
-        subtitle = Subtitle(tracks_by_lang=urls_auto_subtitles, is_auto=True)
+        subtitle_tracks = urls_auto_subtitles
+        is_auto = True
     else:
         log.info('rejected', reason='impossible_task', details='no_subtitles')
         raise ImpossibleTaskError('The video has no subtitles.')
 
+    metadata = {
+        'link': video['link'],
+        'title': info.get('title') or 'no title',
+        'description': (info.get('description') or 'no description').replace('\n', ''),
+        'category': (info.get('categories') or ['no category'])[0],
+        'tracks_by_lang': subtitle_tracks,
+        'is_auto': is_auto
+    }
+
+    current_headers = self.request.headers or {}
+    request_id = current_headers.get('request_id')
+
+    sig = Signature(
+        'app.tasks.download_subtitles',
+        args=[metadata],
+        headers={'request_id': request_id}
+    )
+
+    log.info('succeeded')
+    return self.replace(sig)
+
+
+@app.task
+def download_subtitles(metadata: dict) -> dict:
+    """
+    Downloads and processes subtitle tracks for a given video.
+    The task will retry if a RequestException or ConnectError occurs.
+    Raises:
+        ImpossibleTaskError: If no VTT-format subtitles are found.
+    Returns:
+        dict: A dictionary containing the video metadata and the cleaned subtitle text.
+    """
+    log = logger.bind(video_link=metadata['link'])
+    log.info('received')
+    subtitle = Subtitle(tracks_by_lang=metadata['tracks_by_lang'], is_auto=metadata['is_auto'])
     video_text = subtitle.get()  # A `requests.exceptions.RequestException` exception may occur here
 
     if not video_text:
@@ -78,11 +115,12 @@ def get_video_data(video: dict) -> dict:
         raise ImpossibleTaskError('The video has no VTT-subtitles.')
 
     result = {
-        'title': info.get('title') or 'no title',
-        'description': (info.get('description') or 'no description').replace('\n', ''),
-        'category': (info.get('categories') or ['no category'])[0],
+        'title': metadata['title'],
+        'description': metadata['description'],
+        'category': metadata['category'],
         'text': video_text
     }
+
     log.info('succeeded')
     return result
 
